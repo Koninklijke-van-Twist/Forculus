@@ -1,6 +1,5 @@
 <?php
 $userName = $_SERVER['PHP_AUTH_USER'] ?? "UNAUTHORISED";
-// terugbrengen.php
 
 // 1. Database openen
 $dbPath = __DIR__ . '/sleutels' . str_replace(" ", "_", $userName) . '.sqlite';
