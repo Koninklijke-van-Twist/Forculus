@@ -1,0 +1,52 @@
+name: Deploy to FTP on master push
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install lftp
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lftp
+
+      # Stap 1: alles op de server opruimen behalve .htaccess, .htpasswd, *.json, *.sqlite
+      - name: Clean remote directory (preserve config & db)
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_REMOTE_DIR: ${{ secrets.FTP_REMOTE_DIR }}
+        run: |
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST" << EOF
+          set ftp:ssl-allow true
+          set ftp:list-options -a
+          cd "$FTP_REMOTE_DIR"
+          # Verwijder alle bestanden/mappen behalve:
+          #   .htaccess, .htpasswd, *.json, *.sqlite
+          glob -a -X .htaccess -X .htpasswd -X *.json -X *.sqlite rm -rf *
+          bye
+          EOF
+
+      # Stap 2: inhoud van ./web uploaden naar remote directory
+      - name: Upload web/ to FTP
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_REMOTE_DIR: ${{ secrets.FTP_REMOTE_DIR }}
+        run: |
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST" << EOF
+          set ftp:ssl-allow true
+          cd "$FTP_REMOTE_DIR"
+          mirror -R ./web .
+          bye
+          EOF
