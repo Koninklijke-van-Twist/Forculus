@@ -12,19 +12,6 @@ $dbPath = __DIR__ . '/sleutels' . str_replace(" ", "_", $userName) . '.sqlite';
 try {
     $db = new PDO('sqlite:' . $dbPath);
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-    // failsafe
-    $db->exec("
-        CREATE TABLE IF NOT EXISTS sleutels (
-            id              INTEGER PRIMARY KEY AUTOINCREMENT,
-            naam            TEXT NOT NULL,
-            tapkey_id       TEXT,
-            opslagplek      TEXT,
-            uitgeleend_op   INTEGER,
-            uitgeleend_tot  INTEGER,
-            uitgeleend_aan  TEXT
-        )
-    ");
 } catch (PDOException $e) {
     die('Databasefout: ' . htmlspecialchars($e->getMessage()));
 }

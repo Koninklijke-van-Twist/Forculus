@@ -15,6 +15,7 @@ $db->exec("
         naam            TEXT NOT NULL,
         tapkey_id       TEXT,
         opslagplek      TEXT,
+        toegang         TEXT,
         uitgeleend_op   INTEGER,
         uitgeleend_tot  INTEGER,
         uitgeleend_aan  TEXT

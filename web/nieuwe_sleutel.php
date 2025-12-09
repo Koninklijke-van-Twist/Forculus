@@ -21,18 +21,19 @@ $errors = [];
 $successMessage = null;
 
 $naam = '';
+$tapkeyId   = '';
 $opslagplek = '';
+$toegangTot = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $naam = trim($_POST['naam'] ?? '');
+    $tapkeyId   = trim($_POST['tapkey_id'] ?? '');
     $opslagplek = trim($_POST['opslagplek'] ?? '');
+    $toegangTot = trim($_POST['toegang'] ?? '');
 
     // Validatie
     if ($naam === '') {
         $errors[] = 'De naam van de sleutel is verplicht.';
-    }
-    if ($opslagplek === '') {
-        $errors[] = 'De opslagplek is verplicht.';
     }
 
     if (empty($errors)) {
@@ -46,14 +47,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             // Nieuwe sleutel invoegen
             $stmt = $db->prepare("
-                INSERT INTO sleutels (naam, tapkey_id, opslagplek, uitgeleend_op, uitgeleend_tot, uitgeleend_aan)
-                VALUES (:naam, NULL, :opslagplek, NULL, NULL, NULL)
+                INSERT INTO sleutels (naam, tapkey_id, opslagplek, toegang, uitgeleend_op, uitgeleend_tot, uitgeleend_aan)
+                VALUES (:naam, :tapkey_id, :opslagplek, :toegang, NULL, NULL, NULL)
             ");
 
             try {
                 $stmt->execute([
                     ':naam'       => $naam,
+                    ':tapkey_id'  => $tapkeyId,
                     ':opslagplek' => $opslagplek,
+                    ':toegang'    => $toegangTot,
                 ]);
 
                 $successMessage = 'Sleutel succesvol aangemaakt.';
@@ -183,15 +186,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         />
         <small>Deze naam moet uniek zijn.</small>
 
+        <label for="tapkey_id">Sleutel ID</label>
+        <input
+            type="text"
+            id="tapkey_id"
+            name="tapkey_id"
+            value="<?= htmlspecialchars($tapkeyId) ?>"
+        />
+        <small>Optioneel.</small>
+
         <label for="opslagplek">Opslagplek</label>
         <input
             type="text"
             id="opslagplek"
             name="opslagplek"
             value="<?= htmlspecialchars($opslagplek) ?>"
-            required
         />
+        <small>Optioneel.</small>
 
+        <label for="toegang">De sleutel geeft toegang tot:</label>
+        <input
+            type="text"
+            id="toegang"
+            name="toegang"
+            value="<?= htmlspecialchars($toegangTot) ?>"
+        />
+        <small>Optioneel.</small>
         <a href="index.php">&larr; Terug naar overzicht</a>
         <button type="submit" class="btn" id="submit">Sleutel opslaan</button>
     </form>

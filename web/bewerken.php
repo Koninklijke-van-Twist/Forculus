@@ -9,29 +9,13 @@ error_reporting(E_ALL);
 // 1. Database openen
 $dbPath = __DIR__ . '/sleutels' . str_replace(" ", "_", $userName) . '.sqlite';
 
-try {
+try 
+{
     $db = new PDO('sqlite:' . $dbPath);
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-    // Tabel failsafe
-    $db->exec("
-        CREATE TABLE IF NOT EXISTS sleutels (
-            id              INTEGER PRIMARY KEY AUTOINCREMENT,
-            naam            TEXT NOT NULL,
-            tapkey_id       TEXT,
-            opslagplek      TEXT,
-            uitgeleend_op   INTEGER,
-            uitgeleend_tot  INTEGER,
-            uitgeleend_aan  TEXT
-        )
-    ");
-
-    // Unieke index op naam (als je die nog niet had)
-    $db->exec("
-        CREATE UNIQUE INDEX IF NOT EXISTS idx_sleutels_naam
-        ON sleutels (naam)
-    ");
-} catch (PDOException $e) {
+} 
+catch (PDOException $e) 
+{
     die('Databasefout: ' . htmlspecialchars($e->getMessage()));
 }
 
@@ -67,20 +51,18 @@ if (!$sleutel) {
 // Formwaarden voor invulling
 $naam       = $sleutel['naam'];
 $tapkeyId   = $sleutel['tapkey_id'] ?? '';
+$toegangTot = $sleutel['toegang'] ?? '';
 $opslagplek = $sleutel['opslagplek'] ?? '';
 
 // 4. POST: opslaan wijzigingen
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $naam       = norm($_POST['naam'] ?? '');
     $tapkeyId   = norm($_POST['tapkey_id'] ?? '');
+    $toegangTot = norm($_POST['toegang'] ?? '');
     $opslagplek = norm($_POST['opslagplek'] ?? '');
 
     if ($naam === '') {
         $errors[] = 'De naam van de sleutel is verplicht.';
-    }
-
-    if ($opslagplek === '') {
-        $errors[] = 'De opslagplek is verplicht.';
     }
 
     // Check unieke naam (niet botsen met andere sleutel)
@@ -97,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $bestaatAl = (int)$stmt->fetchColumn() > 0;
 
         if ($bestaatAl) {
-            $errors[] = 'Er bestaat al een andere sleutel met deze naam of Tapkey ID. Kies een andere naam of ID.';
+            $errors[] = 'Er bestaat al een andere sleutel met deze naam of ID. Kies een andere naam of ID.';
         }
     }
 
@@ -106,7 +88,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             UPDATE sleutels
             SET naam = :naam,
                 tapkey_id = :tapkey_id,
-                opslagplek = :opslagplek
+                opslagplek = :opslagplek,
+                toegang = :toegang
             WHERE id = :id
         ");
 
@@ -115,6 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':naam'       => $naam,
                 ':tapkey_id'  => $tapkeyId !== '' ? $tapkeyId : null,
                 ':opslagplek' => $opslagplek,
+                ':toegang'    => $toegangTot,
                 ':id'         => $sleutelId,
             ]);
 
@@ -127,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         } catch (PDOException $e) {
             if ($e->getCode() === '23000') {
-                $errors[] = 'Er bestaat al een andere sleutel met deze naam of Tapkey ID. Kies een andere naam of ID.';
+                $errors[] = 'Er bestaat al een andere sleutel met deze naam of ID. Kies een andere naam of ID.';
             } else {
                 $errors[] = 'Er ging iets mis bij het opslaan: ' . htmlspecialchars($e->getMessage());
             }
@@ -265,7 +249,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             required
         />
 
-        <label for="tapkey_id">Tapkey ID</label>
+        <label for="tapkey_id">Sleutel ID</label>
         <input
             type="text"
             id="tapkey_id"
@@ -279,7 +263,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             id="opslagplek"
             name="opslagplek"
             value="<?= htmlspecialchars($opslagplek) ?>"
-            required
+        />
+        
+        <label for="toegang">De sleutel geeft toegang tot:</label>
+        <input
+            type="text"
+            id="toegang"
+            name="toegang"
+            value="<?= htmlspecialchars($toegangTot) ?>"
         />
 
         <div class="form-actions">

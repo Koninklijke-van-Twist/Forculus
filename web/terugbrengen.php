@@ -257,30 +257,22 @@ $uitgeleendTot = formatTimestampReadable($sleutel['uitgeleend_tot'] ?? null);
             </p>
 
             <dl class="certificate-details">
-                <dt>Sleutelnaam</dt>
-                <dd><?= htmlspecialchars($sleutel['naam']) ?></dd>
-                
-                <dt>Sleutel ID</dt>
-                <dd><?= $sleutel['id'] ?>/<?= $sleutel['tapkey_id'] ?></dd>
+<pre>
+<b>Sleutelnaam:</b>&#9;&#9;&#9;<t><?= htmlspecialchars($sleutel['naam']) ?></t>
+<b>Sleutel ID:</b>&#9;&#9;&#9;<t>(<?= $sleutel['id'] ?>) <?= $sleutel['tapkey_id'] ?></t>
 
-                <dt>Opslagplek</dt>
-                <dd><?= htmlspecialchars($sleutel['opslagplek'] ?? '') ?></dd>
+<b>Opslagplek:</b>&#9;&#9;&#9;<t><?= htmlspecialchars($sleutel['opslagplek'] ?? '') ?></t>
+<b>Geeft toegang tot:</b>&#9;&#9;<t><?= $sleutel['toegang'] ?? "(Onbekend)" ?></t>
+<b>Uitgeleend aan:</b>&#9;&#9;&#9;<t><?= htmlspecialchars($uitlenerNaam) ?> (<?= htmlspecialchars($uitlenerEmail) ?>)</t>
 
-                <dt>Uitgeleend aan</dt>
-                <dd><?= htmlspecialchars($uitlenerNaam) ?> (<?= htmlspecialchars($uitlenerEmail) ?>)</dd>
-
-                <?php if ($uitgeleendOp): ?>
-                    <dt>Oorspronkelijk uitgeleend op</dt>
-                    <dd><?= ucfirst(htmlspecialchars($uitgeleendOp)) ?></dd>
-                <?php endif; ?>
-
-                <?php if ($uitgeleendTot && !$onbeperkt): ?>
-                    <dt>Oorspronkelijk uitgeleend tot</dt>
-                    <dd><?= ucfirst(htmlspecialchars($uitgeleendTot)) ?></dd>
-                <?php endif; ?>
-
-                <dt>Geretourneerd op</dt>
-                <dd><?= ucfirst(htmlspecialchars($huidigTijdstip)) ?></dd>
+<?php if ($uitgeleendOp): ?>
+<b>Oorspronkelijk uitgeleend op:</b>&#9;<t><?= ucfirst(htmlspecialchars($uitgeleendOp)) ?></t>
+<?php endif; ?>
+<?php if ($uitgeleendTot && !$onbeperkt): ?>
+<b>Oorspronkelijk uitgeleend tot:</b>&#9;<t><?= ucfirst(htmlspecialchars($uitgeleendTot)) ?></t>
+<?php endif; ?>
+<b>Geretourneerd op:</b>&#9;&#9;<t><?= ucfirst(htmlspecialchars($huidigTijdstip)) ?></t>
+</pre>
             </dl>
 
             <p>

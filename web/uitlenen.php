@@ -347,6 +347,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 Kies de medewerker aan wie je de sleutel wilt uitlenen, en tot welke datum/tijd.
                 Na het versturen wordt een certificaat van uitgifte getoond, dat je eerst kunt printen of opslaan.
                 Pas na bevestiging wordt de uitgifte in de database geregistreerd.
+<br/>
+                Deze sleutel geeft toegang tot: <?= $sleutel['toegang'] ?? "(Onbekend)" ?>.
             </p>
         </div>
 
@@ -354,7 +356,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <input type="hidden" name="id" value="<?= htmlspecialchars($sleutelId) ?>">
             <input type="hidden" name="step" value="generate">
 
-            <label for="user_id">Uitlenen aan</label>
+            <label for="user_id">Uitlenen aan:</label>
             <input type="text" id="user_id" name="user_id" list="userlist" required/>
             <datalist id="userlist">>
             <?php foreach ($users as $u): ?>
@@ -371,7 +373,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endforeach; ?>
             </datalist>
 
-            <label for="vanaf_datumtijd">Uitgeleend vanaf</label>
+            <label for="vanaf_datumtijd">Uitgeleend vanaf:</label>
             <input
                 type="date"
                 id="vanaf_datumtijd"
@@ -379,7 +381,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 value="<?= htmlspecialchars($selectedVanafRaw) ?>"
             />
 
-            <label for="tot_datumtijd">Uitgeleend tot</label>
+            <label for="tot_datumtijd">Uitgeleend tot:</label>
             <input
                 type="date"
                 id="tot_datumtijd"
@@ -467,23 +469,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 </p>
 
                 <dl class="certificate-details">
-                    <dt>Sleutelnaam</dt>
-                    <dd><?= htmlspecialchars($sleutel['naam']) ?></dd>
-                    
-                    <dt>Sleutel ID</dt>
-                    <dd><?= $sleutel['id'] ?>/<?= $sleutel['tapkey_id'] ?></dd>
+<pre>
+<b>Sleutelnaam:</b>&#9;&#9;<t><?= htmlspecialchars($sleutel['naam']) ?></t>
+<b>Sleutel ID:</b>&#9;&#9;<t>(<?= $sleutel['id'] ?>) <?= $sleutel['tapkey_id'] ?></t>
 
-                    <dt>Opslagplek</dt>
-                    <dd><?= htmlspecialchars($sleutel['opslagplek'] ?? '') ?></dd>
+<b>Opslagplek:</b>&#9;&#9;<t><?= htmlspecialchars($sleutel['opslagplek'] ?? '') ?></t>
+<b>Geeft toegang tot:</b>&#9;<t><?= $sleutel['toegang'] ?? "(Onbekend)" ?></t>
 
-                    <dt>Uitgegeven aan</dt>
-                    <dd><?= htmlspecialchars($uitlenerNaam) ?> (<?= htmlspecialchars($uitlenerEmail) ?>)</dd>
-
-                    <dt>Uitgegeven op</dt>
-                    <dd><?= htmlspecialchars($uitgeleendVanafFormatted) ?></dd>
-
-                    <dt>Uitgeleend tot</dt>
-                    <dd><?= htmlspecialchars($uitgeleendTotFormatted) ?></dd>
+<b>Uitgegeven aan:</b>&#9;&#9;<t><?= htmlspecialchars($uitlenerNaam) ?> (<?= htmlspecialchars($uitlenerEmail) ?>)</t>
+<b>Uitgegeven op:</b>&#9;&#9;<t><?= htmlspecialchars($uitgeleendVanafFormatted) ?></t>
+<b>Uitgeleend tot:</b>&#9;&#9;<t><?= htmlspecialchars($uitgeleendTotFormatted) ?></t>
+</pre>
                 </dl>
 
                 <p>
