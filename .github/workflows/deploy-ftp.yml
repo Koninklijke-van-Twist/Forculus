@@ -48,7 +48,13 @@ jobs:
           set ftp:list-options -a
       
           cd "$FTP_REMOTE_DIR"
-          glob -a -X .htaccess -X .htpasswd -X *.json -X *.sqlite rm -rf *
+          find . \
+            -not -name . \
+            -not -name .htaccess \
+            -not -name .htpasswd \
+            -not -name "*.json" \
+            -not -name "*.sqlite" \
+            -exec rm -rf {} +
           bye
           EOF
 
