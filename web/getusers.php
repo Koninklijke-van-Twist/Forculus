@@ -18,6 +18,25 @@ $tenantId     = $authData['tenantId'];
 $clientId     = $authData['clientId'];
 $clientSecret = $authData['clientSecret'];
 
+$today = date('Y-m-d'); 
+// Alle bestanden die beginnen met users_cache_ en eindigen op .json
+$pattern = __DIR__ . '/users_cache_*.json';
+
+foreach (glob($pattern) as $filePath) 
+{
+    $fileName = basename($filePath);
+
+    // Datumdeel uit de bestandsnaam halen
+    if (preg_match('/^users_cache_(\d{4}-\d{2}-\d{2})\.json$/', $fileName, $m)) 
+    {
+        $fileDate = $m[1]; 
+        // Alle bestanden uit het verleden verwijderen, vandaag houden
+        if ($fileDate < $today) 
+        {
+            unlink($filePath);
+        }
+    }
+}
 
 $cacheFile = __DIR__ . '/users_cache_' . date('Y-m-d') . '.json';
 if (file_exists($cacheFile)) {
