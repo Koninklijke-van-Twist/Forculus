@@ -26,7 +26,8 @@ jobs:
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
           FTP_REMOTE_DIR: ${{ secrets.FTP_REMOTE_DIR }}
         run: |
-          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST" << EOFset cmd:fail-exit true;
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST" << EOF
+          set cmd:fail-exit true;
           set debug 3;
           set net:max-retries 1;
           set net:timeout 20;
