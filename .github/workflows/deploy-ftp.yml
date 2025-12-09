@@ -18,26 +18,21 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y lftp
 
-      # Stap 1: alles op de server opruimen behalve .htaccess, .htpasswd, *.json, *.sqlite
-      - name: Clean remote directory (preserve config & db)
+      - name: Debug env
+        run: |
+          echo "Host: $FTP_HOST"
+          echo "User: $FTP_USERNAME"
+          # echo "Pass: $FTP_PASSWORD"  # liever niet loggen 😉
+          echo "Remote dir: $FTP_REMOTE_DIR"
         env:
           FTP_HOST: ${{ secrets.FTP_HOST }}
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
           FTP_REMOTE_DIR: ${{ secrets.FTP_REMOTE_DIR }}
-        run: |
-          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST" << EOF
-          set ftp:ssl-allow true
-          set ftp:list-options -a
-          cd "$FTP_REMOTE_DIR"
-          # Verwijder alle bestanden/mappen behalve:
-          #   .htaccess, .htpasswd, *.json, *.sqlite
-          glob -a -X .htaccess -X .htpasswd -X *.json -X *.sqlite rm -rf *
-          bye
-          EOF
 
-      # Stap 2: inhoud van ./web uploaden naar remote directory
-      - name: Upload web/ to FTP
+
+      # Stap 1: alles op de server opruimen behalve .htaccess, .htpasswd, *.json, *.sqlite
+      - name: Deploy web/ to FTP (with delete & excludes)
         env:
           FTP_HOST: ${{ secrets.FTP_HOST }}
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
@@ -45,8 +40,21 @@ jobs:
           FTP_REMOTE_DIR: ${{ secrets.FTP_REMOTE_DIR }}
         run: |
           lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST" << EOF
-          set ftp:ssl-allow true
+          set cmd:fail-exit true
+          set net:max-retries 1
+          set net:timeout 20
+          set ftp:ssl-allow false
+          set ftp:passive-mode yes
+      
           cd "$FTP_REMOTE_DIR"
-          mirror -R ./web .
+      
+          mirror -R --delete \
+            --exclude-glob .htaccess \
+            --exclude-glob .htpasswd \
+            --exclude-glob *.json \
+            --exclude-glob *.sqlite \
+            ./web .
+      
           bye
           EOF
+      
