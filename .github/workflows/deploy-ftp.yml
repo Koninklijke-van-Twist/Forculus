@@ -32,35 +32,7 @@ jobs:
 
 
       # Stap 1: alles op de server opruimen behalve .htaccess, .htpasswd, *.json, *.sqlite
-      - name: Clean remote directory (preserve config & db)
-        env:
-          FTP_HOST: ${{ secrets.FTP_HOST }}
-          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
-          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
-          FTP_REMOTE_DIR: ${{ secrets.FTP_REMOTE_DIR }}
-        run: |
-          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_HOST" << EOF
-          set cmd:fail-exit true
-          set net:max-retries 1
-          set net:timeout 20
-          set ftp:ssl-allow false
-          set ftp:passive-mode yes
-          set ftp:list-options -a
-      
-          cd "$FTP_REMOTE_DIR"
-          find . \
-            -not -name . \
-            -not -name .htaccess \
-            -not -name .htpasswd \
-            -not -name "*.json" \
-            -not -name "*.sqlite" \
-            -exec rm -rf {} +
-          bye
-          EOF
-
-
-      # Stap 2: inhoud van ./web uploaden naar remote directory
-      - name: Upload web/ to FTP
+      - name: Deploy web/ to FTP (with delete & excludes)
         env:
           FTP_HOST: ${{ secrets.FTP_HOST }}
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
@@ -75,7 +47,14 @@ jobs:
           set ftp:passive-mode yes
       
           cd "$FTP_REMOTE_DIR"
-          mirror -R ./web .
+      
+          mirror -R --delete \
+            --exclude-glob .htaccess \
+            --exclude-glob .htpasswd \
+            --exclude-glob *.json \
+            --exclude-glob *.sqlite \
+            ./web .
+      
           bye
           EOF
-
+      
