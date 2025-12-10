@@ -247,7 +247,7 @@ function formatTimestamp(?int $ts, $includeTime): string {
         /> &nbsp
         <?php endif ?>
         <a href="nieuwe_sleutel.php" class="btn">Nieuwe sleutel aanmaken</a> &nbsp
-        <a href="sleutels.sqlite" class="btn">Databasebackup downloaden</a>
+        <a href="sleutels<?= str_replace(' ', '_', $userName) ?>.sqlite" class="btn">Databasebackup downloaden</a>
     </div>
 
     <div class="messages">
