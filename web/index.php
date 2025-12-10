@@ -433,17 +433,42 @@ function formatTimestamp(?int $ts, $includeTime): string {
                         const aVal = aSortRaw.toString().trim().toLowerCase();
                         const bVal = bSortRaw.toString().trim().toLowerCase();
 
-                        // Try numeric compare if both are numeric
-                        const aNum = parseFloat(aVal);
-                        const bNum = parseFloat(bVal);
-                        const aIsNum = !isNaN(aNum);
-                        const bIsNum = !isNaN(bNum);
+                        // Special logic for things that might end with numbers:
+                        if (index <= 2) {
+                            const aParts = splitNameWithTrailingNumber(aVal);
+                            const bParts = splitNameWithTrailingNumber(bVal);
 
-                        let cmp = 0;
-                        if (aIsNum && bIsNum) {
-                            cmp = aNum - bNum;
+                            // 1) compare base name
+                            cmp = aParts.base.localeCompare(bParts.base, 'nl', { sensitivity: 'base' });
+
+                            // 2) if equal → compare trailing number (if both have one)
+                            if (cmp === 0) {
+                                const aNum = aParts.num;
+                                const bNum = bParts.num;
+
+                                if (aNum !== null && bNum !== null) {
+                                    cmp = aNum - bNum;
+                                } else if (aNum !== null && bNum === null) {
+                                    // decide ordering: names with number after ones without (or flip)
+                                    cmp = 1;
+                                } else if (aNum === null && bNum !== null) {
+                                    cmp = -1;
+                                } else {
+                                    cmp = 0;
+                                }
+                            }
                         } else {
-                            cmp = aVal.localeCompare(bVal, 'nl');
+                            // Fallback: your original generic logic for other columns
+                            const aNum = parseFloat(aVal);
+                            const bNum = parseFloat(bVal);
+                            const aIsNum = !isNaN(aNum);
+                            const bIsNum = !isNaN(bNum);
+
+                            if (aIsNum && bIsNum) {
+                                cmp = aNum - bNum;
+                            } else {
+                                cmp = aVal.localeCompare(bVal, 'nl');
+                            }
                         }
 
                         return currentSortDir === 'asc' ? cmp : -cmp;
@@ -451,6 +476,19 @@ function formatTimestamp(?int $ts, $includeTime): string {
 
                     // Re-append sorted rows
                     rows.forEach(row => tbody.appendChild(row));
+                }
+
+                function splitNameWithTrailingNumber(raw) {
+                    const text = (raw || '').toString().trim().toLowerCase();
+
+                    // Match: everything + optional trailing digits
+                    // e.g. "GHS-15" -> ["GHS-15", "GHS-", "15"]
+                    const m = text.match(/^(.*?)(\d+)?$/);
+
+                    const base = (m && m[1] ? m[1] : '').trim();
+                    const num  = m && m[2] !== undefined ? parseInt(m[2], 10) : null;
+
+                    return { base, num };
                 }
 
                 // -------- FILTERING --------
