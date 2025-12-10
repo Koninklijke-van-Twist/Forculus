@@ -38,12 +38,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         // Check of de naam al bestaat
-        $stmt = $db->prepare("SELECT COUNT(*) FROM sleutels WHERE naam = :naam");
-        $stmt->execute([':naam' => $naam]);
+        $stmt = $db->prepare("SELECT COUNT(*) FROM sleutels WHERE naam = :naam AND tapkey_id = :tapkey_id");
+        $stmt->execute([':naam' => $naam, ':tapkey_id' => $tapkeyId]);
         $bestaatAl = (int)$stmt->fetchColumn() > 0;
 
         if ($bestaatAl) {
-            $errors[] = 'Er bestaat al een sleutel met deze naam. Kies een andere naam.';
+            $errors[] = 'Er bestaat al een sleutel met deze Naam-ID combinatie. Kies een andere naam of ID.';
         } else {
             // Nieuwe sleutel invoegen
             $stmt = $db->prepare("
@@ -51,7 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 VALUES (:naam, :tapkey_id, :opslagplek, :toegang, NULL, NULL, NULL)
             ");
 
-            try {
+            try 
+            {
                 $stmt->execute([
                     ':naam'       => $naam,
                     ':tapkey_id'  => $tapkeyId,
@@ -60,13 +61,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
 
                 $successMessage = 'Sleutel succesvol aangemaakt.';
-                // Velden leegmaken na succes
-                $naam = '';
-                $opslagplek = '';
-            } catch (PDOException $e) {
+                header('Location: index.php?status=created');
+            } 
+            catch (PDOException $e) 
+            {
                 // Mocht de unieke index alsnog een fout geven
                 if ($e->getCode() === '23000') {
-                    $errors[] = 'Er bestaat al een sleutel met deze naam. Kies een andere naam.';
+                    $errors[] = 'Er bestaat al een sleutel met deze Naam-ID combinatie. Kies een andere naam of ID.';
                 } else {
                     $errors[] = 'Er ging iets mis bij het opslaan: ' . htmlspecialchars($e->getMessage());
                 }
@@ -184,7 +185,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             value="<?= htmlspecialchars($naam) ?>"
             required
         />
-        <small>Deze naam moet uniek zijn.</small>
+        <small>Deze naam moet uniek zijn, tenzij een Sleutel-ID toegevoegd wordt.</small>
 
         <label for="tapkey_id">Sleutel ID</label>
         <input
@@ -193,7 +194,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             name="tapkey_id"
             value="<?= htmlspecialchars($tapkeyId) ?>"
         />
-        <small>Optioneel.</small>
+        <small>Optioneel (Naam-ID moet uniek zijn).</small>
 
         <label for="opslagplek">Opslagplek</label>
         <input

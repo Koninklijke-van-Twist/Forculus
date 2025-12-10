@@ -22,16 +22,6 @@ $db->exec("
     )
 ");
 
-$db->exec("
-        CREATE UNIQUE INDEX IF NOT EXISTS idx_sleutels_naam
-        ON sleutels (naam)
-    ");
-
-$db->exec("
-        CREATE UNIQUE INDEX IF NOT EXISTS idx_sleutels_tapkey_id
-        ON sleutels (tapkey_id)
-    ");
-
 // 3. Alle sleutels ophalen
 $stmt = $db->query("SELECT * FROM sleutels ORDER BY naam ASC");
 $sleutels = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -58,6 +48,8 @@ if (isset($_GET['status'])) {
         $statusMessage = 'Sleutel is gemarkeerd als teruggebracht.';
     } elseif ($_GET['status'] === 'lent') {
         $statusMessage = 'Sleutel is succesvol uitgeleend.';
+    } elseif ($_GET['status'] === 'created') {
+        $statusMessage = 'Sleutel is succesvol aangemaakt.';
     }
 }
 
@@ -347,7 +339,7 @@ function formatTimestamp(?int $ts, $includeTime): string {
                 $uitlenenDisabled = $heeftLoanTimestamps;
                 ?>
                 <tr>
-                    <td <?php if ($s['tapkey_id'] <> null || $s['toegang'] <> null): ?>class="above"<?php endif; ?> data-sort="<?= htmlspecialchars($naam) ?: 0 ?>"><?= htmlspecialchars($naam) ?>
+                    <td <?php if ($s['tapkey_id'] <> null || $s['toegang'] <> null): ?>class="above"<?php endif; ?> data-sort="<?= htmlspecialchars($naam) . htmlspecialchars($s['tapkey_id']) ?: 0 ?>"><?= htmlspecialchars($naam) ?>
                     <?php if ($s['tapkey_id'] <> null): ?>    
                     <div class="below"> <?= "ID: " . $s['tapkey_id'] ?></div> 
                     <?php elseif ($s['toegang'] <> null): ?>
@@ -402,9 +394,10 @@ function formatTimestamp(?int $ts, $includeTime): string {
                 const headers = table.querySelectorAll('thead th');
                 const searchInput = document.getElementById('sleutelSearch');
 
-                let currentSortCol = null;
+                let currentSortCol = 0;
                 let currentSortDir = 'asc'; // or 'desc'
 
+                sortTable(0, currentSortDir)
                 // -------- SORTING --------
                 headers.forEach((th, index) => {
                     // Skip the "Acties" column (last one)
@@ -421,39 +414,44 @@ function formatTimestamp(?int $ts, $includeTime): string {
                             currentSortDir = 'asc';
                         }
 
-                        const rows = Array.from(tbody.rows);
-
-                        rows.sort((a, b) => {
-                            const aCell = a.cells[index];
-                            const bCell = b.cells[index];
-
-                            // Prefer data-sort if present (for dates)
-                            const aSortRaw = aCell.dataset.sort !== undefined ? aCell.dataset.sort : aCell.textContent;
-                            const bSortRaw = bCell.dataset.sort !== undefined ? bCell.dataset.sort : bCell.textContent;
-
-                            const aVal = aSortRaw.toString().trim().toLowerCase();
-                            const bVal = bSortRaw.toString().trim().toLowerCase();
-
-                            // Try numeric compare if both are numeric
-                            const aNum = parseFloat(aVal);
-                            const bNum = parseFloat(bVal);
-                            const aIsNum = !isNaN(aNum);
-                            const bIsNum = !isNaN(bNum);
-
-                            let cmp = 0;
-                            if (aIsNum && bIsNum) {
-                                cmp = aNum - bNum;
-                            } else {
-                                cmp = aVal.localeCompare(bVal, 'nl');
-                            }
-
-                            return currentSortDir === 'asc' ? cmp : -cmp;
-                        });
-
-                        // Re-append sorted rows
-                        rows.forEach(row => tbody.appendChild(row));
+                        sortTable(index, currentSortDir);
                     });
                 });
+
+                function sortTable(index, currentSortDir)
+                {
+                    const rows = Array.from(tbody.rows);
+
+                    rows.sort((a, b) => {
+                        const aCell = a.cells[index];
+                        const bCell = b.cells[index];
+
+                        // Prefer data-sort if present (for dates)
+                        const aSortRaw = aCell.dataset.sort !== undefined ? aCell.dataset.sort : aCell.textContent;
+                        const bSortRaw = bCell.dataset.sort !== undefined ? bCell.dataset.sort : bCell.textContent;
+
+                        const aVal = aSortRaw.toString().trim().toLowerCase();
+                        const bVal = bSortRaw.toString().trim().toLowerCase();
+
+                        // Try numeric compare if both are numeric
+                        const aNum = parseFloat(aVal);
+                        const bNum = parseFloat(bVal);
+                        const aIsNum = !isNaN(aNum);
+                        const bIsNum = !isNaN(bNum);
+
+                        let cmp = 0;
+                        if (aIsNum && bIsNum) {
+                            cmp = aNum - bNum;
+                        } else {
+                            cmp = aVal.localeCompare(bVal, 'nl');
+                        }
+
+                        return currentSortDir === 'asc' ? cmp : -cmp;
+                    });
+
+                    // Re-append sorted rows
+                    rows.forEach(row => tbody.appendChild(row));
+                }
 
                 // -------- FILTERING --------
                 if (searchInput) {

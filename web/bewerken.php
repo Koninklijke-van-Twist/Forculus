@@ -70,16 +70,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $db->prepare("
             SELECT COUNT(*) 
             FROM sleutels 
-            WHERE naam = :naam AND id <> :id
+            WHERE naam = :naam AND tapkey_id = :tapkey_id AND id <> :id
         ");
         $stmt->execute([
             ':naam' => $naam,
-            ':id'   => $sleutelId,
+            ':tapkey_id'   => $tapkeyId,
+            ':id' => $sleutelId
         ]);
         $bestaatAl = (int)$stmt->fetchColumn() > 0;
 
         if ($bestaatAl) {
-            $errors[] = 'Er bestaat al een andere sleutel met deze naam of ID. Kies een andere naam of ID.';
+            $errors[] = 'Er bestaat al een sleutel met deze Naam-ID combinatie. Kies een andere naam of ID.';
         }
     }
 
