@@ -225,18 +225,19 @@ function formatTimestamp(?int $ts, $includeTime): string {
         }
         .above{
             position: relative;
-            padding-bottom: 40px;
+            padding-bottom: 35px;
         }
         .below
         {
             color: #999;
             position: absolute;   
-            top: 50%;            /* direct onder de parent */
-            height: 1%;
+            top: 50%;   
+            height: 25px;         /* direct onder de parent */
             left: 50%;            /* begin centreren */
-            width: 200%;          /* twee keer zo breed */
-            transform: translateX(-22%);  /* volledig centreren */
-            margin-top: 15px;
+            width: 400%;          /* twee keer zo breed */
+            transform: translateX(-11%);  /* volledig centreren */
+            margin-top: 5px;
+            overflow: hidden;
         }
     </style>
 </head>
@@ -350,18 +351,18 @@ function formatTimestamp(?int $ts, $includeTime): string {
                     <?php if ($s['tapkey_id'] <> null): ?>    
                     <div class="below"> <?= "ID: " . $s['tapkey_id'] ?></div> 
                     <?php elseif ($s['toegang'] <> null): ?>
-                    <div class="below"> <?= "Geeft toegang tot: " . $s['toegang'] ?></div>
+                    <div class="below"> <?= "Toegang tot: " . $s['toegang'] ?></div>
                     <?php endif; ?>
                     </td>
-                    <td <?php if ($s['tapkey_id'] <> null || $s['toegang'] <> null): ?>class="above"<?php endif; ?> data-sort="<?= htmlspecialchars($opslagplek) ?: 0 ?>"><?= htmlspecialchars($opslagplek ?: '') ?></td>
+                    <td <?php if ($s['tapkey_id'] <> null || $s['toegang'] <> null): ?>class="above"<?php endif; ?> data-sort="<?= htmlspecialchars($opslagplek) ?: 0 ?>"><?= htmlspecialchars($opslagplek ?: '') ?>
+                    
+                        <?php if ($s['tapkey_id'] <> null && $s['toegang'] <> null): ?>
+                        <div class="below"> <?= $s['toegang'] <> null? "Toegang tot: " . $s['toegang'] : " " ?></div>
+                        <?php endif; ?></td>
                     <td <?php if ($s['tapkey_id'] <> null || $s['toegang'] <> null): ?>class="above"<?php endif; ?>>
                         <span class="<?= $uitgeleendAanClass ?>">
                             <?= htmlspecialchars($uitgeleendAanText) ?>
                         </span>
-
-                        <?php if ($s['tapkey_id'] <> null && $s['toegang'] <> null): ?>
-                        <div class="below"> <?= $s['toegang'] <> null? "Geeft toegang tot: " . $s['toegang'] : " " ?></div>
-                        <?php endif; ?>
                     </td>
                     <td <?php if ($s['tapkey_id'] <> null || $s['toegang'] <> null): ?>class="above"<?php endif; ?> data-sort="<?= $uitgeleendOp ?: 0 ?>"><?= $uitgeleendOpFormatted ? htmlspecialchars($uitgeleendOpFormatted) : '' ?></td>
                     <td <?php if ($s['tapkey_id'] <> null || $s['toegang'] <> null): ?>class="above"<?php endif; ?> data-sort="<?= $uitgeleendTot ?: 0 ?>"> <span class="<?= $uitgeleendTotFormatted <> null && $uitgeleendTotFormatted <= date('d-m-Y')? 'late-key' : 'ok-key' ?>"><?= $uitgeleendTotFormatted ? htmlspecialchars($uitgeleendTotFormatted) : '' ?></span></td>

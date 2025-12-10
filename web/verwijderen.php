@@ -178,11 +178,14 @@ if (!$sleutel) {
         <dt>Sleutelnaam</dt>
         <dd><?= htmlspecialchars($sleutel['naam']) ?></dd>
 
-        <dt>Tapkey ID</dt>
+        <dt>Sleutel ID</dt>
         <dd><?= htmlspecialchars($sleutel['tapkey_id'] ?? '(geen)') ?></dd>
 
         <dt>Opslagplek</dt>
         <dd><?= htmlspecialchars($sleutel['opslagplek'] ?? '(onbekend)') ?></dd>
+
+        <dt>Geeft toegang tot</dt>
+        <dd><?= htmlspecialchars($sleutel['toegang'] ?? '(onbekend)') ?></dd>
     </dl>
 
     <div class="actions">
