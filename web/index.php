@@ -90,7 +90,7 @@ function formatTimestamp(?int $ts, $includeTime): string {
             padding: 0;
         }
         .container {
-            max-width: 960px;
+            max-width: 1260px;
             margin: 40px auto;
             background: #ffffff;
             padding: 24px;
@@ -167,12 +167,14 @@ function formatTimestamp(?int $ts, $includeTime): string {
             background: #fafafa;
         }
         .tag {
-            display: inline-block;
+            display: flex;
             padding: 2px 6px;
             border-radius: 3px;
             font-size: 0.75rem;
             background: #eee;
             color: #555;
+            min-height: 30px;
+            align-items: center;
         }
         .tag-green {
             background: #e6ffed;
@@ -185,10 +187,34 @@ function formatTimestamp(?int $ts, $includeTime): string {
             background-repeat: no-repeat;     /* niet herhalen */
             background-size: auto 100%;       /* verticaal passend in het element */
             background-position: right center; /* zo ver mogelijk rechts, verticaal gecentreerd */
+            padding-right: 35px;
+        }
+        .tag-red {
+            display: flex;
+            background: #ffe6e6;
+            color: #a30000;
+            min-height: 30px;
+            align-items: center;
         }
         .tag-red {
             background: #ffe6e6;
             color: #a30000;
+        }
+        .tag-red-kvt {
+            background: #ffe6e6;
+            color: #a30000;
+            background-image: url('kvtlogo.png');
+            background-repeat: no-repeat;     /* niet herhalen */
+            background-size: auto 100%;       /* verticaal passend in het element */
+            background-position: right center; /* zo ver mogelijk rechts, verticaal gecentreerd */
+            padding-right: 35px;
+        }
+        .late-key {
+            width: 100%;
+            height: 100%;
+            padding: 5px;
+            background: #a30000;
+            color: #ffe6e6;
         }
         .nowrap {
             white-space: nowrap;
@@ -196,6 +222,21 @@ function formatTimestamp(?int $ts, $includeTime): string {
         .empty {
             color: #999;
             font-style: italic;
+        }
+        .above{
+            position: relative;
+            padding-bottom: 40px;
+        }
+        .below
+        {
+            color: #999;
+            position: absolute;   
+            top: 50%;            /* direct onder de parent */
+            height: 1%;
+            left: 50%;            /* begin centreren */
+            width: 200%;          /* twee keer zo breed */
+            transform: translateX(-22%);  /* volledig centreren */
+            margin-top: 15px;
         }
     </style>
 </head>
@@ -250,7 +291,7 @@ function formatTimestamp(?int $ts, $includeTime): string {
                     !empty($uitgeleendTot);
 
                 if ($heeftLoanTimestamps) {
-                    $uitgeleendOpFormatted = formatTimestamp($uitgeleendOp, true);
+                    $uitgeleendOpFormatted = formatTimestamp($uitgeleendOp, false);
                     $uitgeleendTotFormatted = formatTimestamp($uitgeleendTot, false);
                 } else {
                     $uitgeleendOpFormatted = '';
@@ -277,6 +318,11 @@ function formatTimestamp(?int $ts, $includeTime): string {
                             $emailUser = $u['Email'] ?? '(email onbekend)';
                             $uitgeleendAanText = $naamUser . ' (' . $emailUser . ')';
                             $uitgeleendAanClass = 'tag tag-blue';
+                            
+                            if($uitgeleendTotFormatted <= date('d-m-Y'))
+                            {
+                                $uitgeleendAanClass = 'tag tag-red-kvt';
+                            }
                         }
                         else
                         {
@@ -284,7 +330,13 @@ function formatTimestamp(?int $ts, $includeTime): string {
                             $emailUser = 'Extern';
                             $uitgeleendAanText = $naamUser . ' (' . $emailUser . ')';
                             $uitgeleendAanClass = 'tag tag-green';
+                            
+                            if($uitgeleendTotFormatted <= date('d-m-Y'))
+                            {
+                                $uitgeleendAanClass = 'tag tag-red';
+                            }
                         }
+
                     }
                 }
 
@@ -294,16 +346,26 @@ function formatTimestamp(?int $ts, $includeTime): string {
                 $uitlenenDisabled = $heeftLoanTimestamps;
                 ?>
                 <tr>
-                    <td data-sort="<?= htmlspecialchars($naam) ?: 0 ?>"><?= htmlspecialchars($naam) ?></td>
-                    <td data-sort="<?= htmlspecialchars($opslagplek) ?: 0 ?>"><?= htmlspecialchars($opslagplek ?: '') ?></td>
-                    <td>
+                    <td <?php if ($s['tapkey_id'] <> null || $s['toegang'] <> null): ?>class="above"<?php endif; ?> data-sort="<?= htmlspecialchars($naam) ?: 0 ?>"><?= htmlspecialchars($naam) ?>
+                    <?php if ($s['tapkey_id'] <> null): ?>    
+                    <div class="below"> <?= "ID: " . $s['tapkey_id'] ?></div> 
+                    <?php elseif ($s['toegang'] <> null): ?>
+                    <div class="below"> <?= "Geeft toegang tot: " . $s['toegang'] ?></div>
+                    <?php endif; ?>
+                    </td>
+                    <td <?php if ($s['tapkey_id'] <> null || $s['toegang'] <> null): ?>class="above"<?php endif; ?> data-sort="<?= htmlspecialchars($opslagplek) ?: 0 ?>"><?= htmlspecialchars($opslagplek ?: '') ?></td>
+                    <td <?php if ($s['tapkey_id'] <> null || $s['toegang'] <> null): ?>class="above"<?php endif; ?>>
                         <span class="<?= $uitgeleendAanClass ?>">
                             <?= htmlspecialchars($uitgeleendAanText) ?>
                         </span>
+
+                        <?php if ($s['tapkey_id'] <> null && $s['toegang'] <> null): ?>
+                        <div class="below"> <?= $s['toegang'] <> null? "Geeft toegang tot: " . $s['toegang'] : " " ?></div>
+                        <?php endif; ?>
                     </td>
-                    <td data-sort="<?= $uitgeleendOp ?: 0 ?>"><?= $uitgeleendOpFormatted ? htmlspecialchars($uitgeleendOpFormatted) : '' ?></td>
-                    <td data-sort="<?= $uitgeleendTot ?: 0 ?>"><?= $uitgeleendTotFormatted ? htmlspecialchars($uitgeleendTotFormatted) : '' ?></td>
-                    <td class="nowrap">
+                    <td <?php if ($s['tapkey_id'] <> null || $s['toegang'] <> null): ?>class="above"<?php endif; ?> data-sort="<?= $uitgeleendOp ?: 0 ?>"><?= $uitgeleendOpFormatted ? htmlspecialchars($uitgeleendOpFormatted) : '' ?></td>
+                    <td <?php if ($s['tapkey_id'] <> null || $s['toegang'] <> null): ?>class="above"<?php endif; ?> data-sort="<?= $uitgeleendTot ?: 0 ?>"> <span class="<?= $uitgeleendTotFormatted <> null && $uitgeleendTotFormatted <= date('d-m-Y')? 'late-key' : 'ok-key' ?>"><?= $uitgeleendTotFormatted ? htmlspecialchars($uitgeleendTotFormatted) : '' ?></span></td>
+                    <td class="nowrap <?php if ($s['tapkey_id'] <> null || $s['toegang'] <> null): ?>above<?php endif; ?>">
                         <?php if ($terugbrengenDisabled): ?>
                             <a class="btn-small btn-secondary" style="opacity: .6; pointer-events: none;">Terugbrengen</a>
                         <?php else: ?>

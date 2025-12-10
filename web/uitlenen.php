@@ -84,6 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $selectedUserId = norm($_POST['user_id'] ?? '');
         $selectedTotRaw = norm($_POST['tot_datumtijd'] ?? '');
+        $selectedVanafRaw = norm($_POST['vanaf_datumtijd'] ?? date('Y-m-d'));
 
         if ($selectedUserId === '') {
             $errors[] = 'Kies een gebruiker of voer een naam in.';
@@ -109,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Verwacht formaat: 'YYYY-MM-DDTHH:MM' (datetime-local)
             $totTs = strtotime($selectedTotRaw);
             $vanafTs = strtotime($selectedVanafRaw);
-            if ($totTs === false) {
+            if ($totTs === false || $vanafTs === false) {
                 $errors[] = 'Ongeldig datum-/tijdformaat.';
             } elseif ($totTs < $vanafTs) {
                 $errors[] = 'De einddatum/-tijd moet in de toekomst liggen.';
@@ -132,18 +133,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Stap 2: gebruiker bevestigt uitgifte na certificaat
         $confirmUserId = norm($_POST['user_id'] ?? '');
         $confirmTotTs  = $_POST['tot_ts'] ?? null;
+        $confirmVanafTs  = $_POST['vanaf_ts'] ?? date('Y-m-d');
 
         if ($confirmUserId === '') {
             $errors[] = 'Ongeldige gebruiker bij bevestiging.';
         }
 
+        if ($confirmVanafTs === null || !is_numeric($confirmVanafTs)) {
+            $errors[] = 'Ongeldige startdatum-/tijd bij bevestiging. (' . $confirmVanafTs . ')';
+        }
+
         if ($confirmTotTs === null || !is_numeric($confirmTotTs)) {
-            $errors[] = 'Ongeldige einddatum-/tijd bij bevestiging.';
+            $errors[] = 'Ongeldige einddatum-/tijd bij bevestiging. (' . $confirmTotTs . ')';
         }
 
         if (empty($errors)) {
             $nu = time();
             $totTs = (int)$confirmTotTs;
+            $vanafTs = (int)$confirmVanafTs;
 
             $stmt = $db->prepare("
                 UPDATE sleutels
@@ -445,6 +452,9 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!$uitgeleendTotTs && $selectedTotRaw) {
             $uitgeleendTotTs = $totTs === -1? "Onbeperkte tijd" : strtotime($selectedTotRaw);
         }
+        if (!$uitgeleendVanafTs && $selectedVanafRaw) {
+            $uitgeleendVanafTs = strtotime($selectedVanafRaw);
+        }
         $uitgeleendVanafFormatted = $uitgeleendVanafFormatted ?: date('d-m-Y', $uitgeleendVanafTs);
         $uitgeleendTotFormatted = $totTs === -1? "Onbeperkte tijd" : ($uitgeleendTotFormatted ?: date('d-m-Y', $uitgeleendTotTs));
         ?>
@@ -511,6 +521,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <input type="hidden" name="id" value="<?= htmlspecialchars($sleutelId) ?>">
                 <input type="hidden" name="user_id" value="<?= htmlspecialchars($selectedUserId) ?>">
                 <input type="hidden" name="tot_ts" value="<?= $totTs === -1? -1 : htmlspecialchars($uitgeleendTotTs) ?>">
+                <input type="hidden" name="vanaf_ts" value="<?= htmlspecialchars($uitgeleendVanafTs) ?>">
                 <button type="submit" class="btn">
                     Bevestig uitgifte
                 </button>

@@ -69,8 +69,8 @@ if (file_exists($getUsersFile)) {
 
 // Uitlener bepalen
 $uitgeleendAanId = $sleutel['uitgeleend_aan'] ?? null;
-$uitlenerNaam = '(onbekende gebruiker)';
-$uitlenerEmail = '(onbekend e-mailadres)';
+$uitlenerNaam = $uitgeleendAanId;
+$uitlenerEmail = 'Extern';
 
 if ($uitgeleendAanId && isset($userById[$uitgeleendAanId])) {
     $u = $userById[$uitgeleendAanId];
