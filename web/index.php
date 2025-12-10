@@ -339,7 +339,7 @@ function formatTimestamp(?int $ts, $includeTime): string {
                 $uitlenenDisabled = $heeftLoanTimestamps;
                 ?>
                 <tr>
-                    <td <?php if ($s['tapkey_id'] <> null || $s['toegang'] <> null): ?>class="above"<?php endif; ?> data-sort="<?= htmlspecialchars($naam) . htmlspecialchars($s['tapkey_id']) ?: 0 ?>"><?= htmlspecialchars($naam) ?>
+                    <td <?php if ($s['tapkey_id'] <> null || $s['toegang'] <> null): ?>class="above"<?php endif; ?> data-sort="<?= htmlspecialchars($naam) . htmlspecialchars($s['tapkey_id'] ?? "") ?: 0 ?>"><?= htmlspecialchars($naam) ?>
                     <?php if ($s['tapkey_id'] <> null): ?>    
                     <div class="below"> <?= "ID: " . $s['tapkey_id'] ?></div> 
                     <?php elseif ($s['toegang'] <> null): ?>
