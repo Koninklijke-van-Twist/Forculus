@@ -1,5 +1,5 @@
 <?php
-$userName = $_SERVER['PHP_AUTH_USER'] ?? "UNAUTHORISED";
+$userName = $_SERVER['PHP_AUTH_USER'] ?? "DEBUG";
 
 // ====== CONFIG ======
 $authFile = __DIR__ . '/auth.json';

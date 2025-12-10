@@ -1,5 +1,5 @@
 <?php
-$userName = $_SERVER['PHP_AUTH_USER'] ?? "UNAUTHORISED";
+$userName = $_SERVER['PHP_AUTH_USER'] ?? "DEBUG";
 
 // 1. Database openen
 $dbPath = __DIR__ . '/sleutels' . str_replace(" ", "_", $userName) . '.sqlite';

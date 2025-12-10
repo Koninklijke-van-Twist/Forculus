@@ -1,7 +1,7 @@
 <?php
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
-$userName = $_SERVER['PHP_AUTH_USER'] ?? "UNAUTHORISED";
+$userName = $_SERVER['PHP_AUTH_USER'] ?? "DEBUG";
 error_reporting(E_ALL);
 // Database openen of aanmaken
 $dbPath = __DIR__ . '/sleutels' . str_replace(" ", "_", $userName) . '.sqlite';

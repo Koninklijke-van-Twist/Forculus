@@ -1,5 +1,5 @@
 <?php
-$userName = $_SERVER['PHP_AUTH_USER'] ?? "UNAUTHORISED";
+$userName = $_SERVER['PHP_AUTH_USER'] ?? "DEBUG";
 // bewerken.php
 
 ini_set('display_errors', 1);
