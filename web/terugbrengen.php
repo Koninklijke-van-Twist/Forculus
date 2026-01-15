@@ -14,9 +14,9 @@ try {
 // 2. Sleutel-id ophalen (uit GET of POST)
 $sleutelId = 0;
 if (isset($_GET['id'])) {
-    $sleutelId = (int)$_GET['id'];
+    $sleutelId = (int) $_GET['id'];
 } elseif (isset($_POST['id'])) {
-    $sleutelId = (int)$_POST['id'];
+    $sleutelId = (int) $_POST['id'];
 }
 
 if ($sleutelId <= 0) {
@@ -84,11 +84,12 @@ setlocale(LC_TIME, 'nl_NL.utf8', 'nl_NL.UTF-8', 'nl_NL', 'dutch');
 $huidigTijdstip = strftime('%A %d %B %Y %H:%M'); //date('D d M Y H:i');
 
 // Kleine helper om uitgeleend_op/uitgeleend_tot te tonen (optioneel)
-function formatTimestampReadable($ts): string {
+function formatTimestampReadable($ts): string
+{
     if ($ts === null || $ts === '' || !is_numeric($ts)) {
         return '';
     }
-    return strftime('%A %d %B %Y %H:%M', (int)$ts);
+    return strftime('%A %d %B %Y %H:%M', (int) $ts);
 }
 
 $onbeperkt = $sleutel['uitgeleend_tot'] === -1;
@@ -98,6 +99,7 @@ $uitgeleendTot = formatTimestampReadable($sleutel['uitgeleend_tot'] ?? null);
 ?>
 <!DOCTYPE html>
 <html lang="nl">
+
 <head>
     <meta charset="UTF-8">
     <title>Sleutel terugbrengen – certificaat</title>
@@ -108,34 +110,41 @@ $uitgeleendTot = formatTimestampReadable($sleutel['uitgeleend_tot'] ?? null);
             margin: 0;
             padding: 0;
         }
+
         .container {
             max-width: 960px;
             margin: 40px auto;
             background: #ffffff;
             padding: 24px;
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
+
         h1 {
             margin-top: 0;
             font-size: 1.6rem;
             text-align: center;
         }
+
         .back-link {
             margin-bottom: 16px;
         }
+
         .back-link a {
             text-decoration: none;
             color: #007acc;
             font-size: 0.85rem;
         }
+
         .back-link a:hover {
             text-decoration: underline;
         }
+
         .info {
             margin-bottom: 16px;
             font-size: 0.9rem;
         }
+
         .btn {
             display: inline-block;
             padding: 8px 16px;
@@ -148,24 +157,30 @@ $uitgeleendTot = formatTimestampReadable($sleutel['uitgeleend_tot'] ?? null);
             text-decoration: none;
             font-size: 0.9rem;
         }
+
         .btn:hover {
             background: #005fa1;
         }
+
         .btn-secondary {
             background: #777;
         }
+
         .btn-secondary:hover {
             background: #555;
         }
+
         .certificate-wrapper {
             margin-top: 24px;
         }
+
         .certificate {
             background: #ffffff;
             border: 1px solid #ddd;
             padding: 32px;
             border-radius: 6px;
         }
+
         .certificate h2 {
             text-align: center;
             margin-top: 0;
@@ -173,20 +188,25 @@ $uitgeleendTot = formatTimestampReadable($sleutel['uitgeleend_tot'] ?? null);
             letter-spacing: 1px;
             font-size: 1.2rem;
         }
+
         .certificate p {
             line-height: 1.5;
             font-size: 0.95rem;
         }
+
         .certificate-details {
             margin: 16px 0;
             font-size: 0.9rem;
         }
+
         .certificate-details dt {
             font-weight: 600;
         }
+
         .certificate-details dd {
             margin: 0 0 8px 0;
         }
+
         .signatures {
             margin-top: 32px;
             display: flex;
@@ -194,9 +214,11 @@ $uitgeleendTot = formatTimestampReadable($sleutel['uitgeleend_tot'] ?? null);
             gap: 40px;
             font-size: 0.9rem;
         }
+
         .signature-block {
             flex: 1;
         }
+
         .signature-line {
             margin-top: 40px;
             border-top: 1px solid #000;
@@ -204,6 +226,7 @@ $uitgeleendTot = formatTimestampReadable($sleutel['uitgeleend_tot'] ?? null);
             text-align: center;
             font-size: 0.8rem;
         }
+
         .actions-bottom {
             margin-top: 24px;
             display: flex;
@@ -211,15 +234,18 @@ $uitgeleendTot = formatTimestampReadable($sleutel['uitgeleend_tot'] ?? null);
             flex-wrap: wrap;
             gap: 8px;
         }
+
         @media print {
             body {
                 background: #ffffff;
             }
+
             .container {
                 box-shadow: none;
                 margin: 0;
                 border-radius: 0;
             }
+
             .back-link,
             .info,
             .actions-bottom {
@@ -227,37 +253,42 @@ $uitgeleendTot = formatTimestampReadable($sleutel['uitgeleend_tot'] ?? null);
             }
         }
     </style>
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="manifest" href="site.webmanifest">
 </head>
+
 <body>
-<div class="container">
-    <div class="back-link">
-        <a href="index.php">&larr; Terug naar overzicht</a>
-    </div>
+    <div class="container">
+        <div class="back-link">
+            <a href="index.php">&larr; Terug naar overzicht</a>
+        </div>
 
-    <h1>Sleutel terugbrengen</h1>
+        <h1>Sleutel terugbrengen</h1>
 
-    <div class="info">
-        <p>
-            Hieronder staat het certificaat voor het terugbrengen van de sleutel
-            <strong><?= htmlspecialchars($sleutel['naam']) ?></strong>.
-        </p>
-        <p>
-            <strong>Belangrijk:</strong> Print of sla dit document eerst op als bewijs.
-            Pas daarna kun je bevestigen dat de sleutel is teruggebracht.
-            Zolang je niet bevestigt, wordt er <strong>geen wijziging</strong> in de database doorgevoerd.
-        </p>
-    </div>
-
-    <div class="certificate-wrapper">
-        <div class="certificate">
-            <h2>Bewijs van teruggave sleutel</h2>
-
+        <div class="info">
             <p>
-                Dit document dient als bewijs dat de onderstaande sleutel is geretourneerd.
+                Hieronder staat het certificaat voor het terugbrengen van de sleutel
+                <strong><?= htmlspecialchars($sleutel['naam']) ?></strong>.
             </p>
+            <p>
+                <strong>Belangrijk:</strong> Print of sla dit document eerst op als bewijs.
+                Pas daarna kun je bevestigen dat de sleutel is teruggebracht.
+                Zolang je niet bevestigt, wordt er <strong>geen wijziging</strong> in de database doorgevoerd.
+            </p>
+        </div>
 
-            <dl class="certificate-details">
-<pre>
+        <div class="certificate-wrapper">
+            <div class="certificate">
+                <h2>Bewijs van teruggave sleutel</h2>
+
+                <p>
+                    Dit document dient als bewijs dat de onderstaande sleutel is geretourneerd.
+                </p>
+
+                <dl class="certificate-details">
+                    <pre>
 <b>Sleutelnaam:</b>&#9;&#9;&#9;<t><?= htmlspecialchars($sleutel['naam']) ?></t>
 <b>Sleutel ID:</b>&#9;&#9;&#9;<t>(<?= $sleutel['id'] ?>) <?= $sleutel['tapkey_id'] ?></t>
 
@@ -266,46 +297,48 @@ $uitgeleendTot = formatTimestampReadable($sleutel['uitgeleend_tot'] ?? null);
 <b>Uitgeleend aan:</b>&#9;&#9;&#9;<t><?= htmlspecialchars($uitlenerNaam) ?> (<?= htmlspecialchars($uitlenerEmail) ?>)</t>
 
 <?php if ($uitgeleendOp): ?>
-<b>Oorspronkelijk uitgeleend op:</b>&#9;<t><?= ucfirst(htmlspecialchars($uitgeleendOp)) ?></t>
+    <b>Oorspronkelijk uitgeleend op:</b>&#9;<t><?= ucfirst(htmlspecialchars($uitgeleendOp)) ?></t>
 <?php endif; ?>
 <?php if ($uitgeleendTot && !$onbeperkt): ?>
-<b>Oorspronkelijk uitgeleend tot:</b>&#9;<t><?= ucfirst(htmlspecialchars($uitgeleendTot)) ?></t>
+    <b>Oorspronkelijk uitgeleend tot:</b>&#9;<t><?= ucfirst(htmlspecialchars($uitgeleendTot)) ?></t>
 <?php endif; ?>
 <b>Geretourneerd op:</b>&#9;&#9;<t><?= ucfirst(htmlspecialchars($huidigTijdstip)) ?></t>
 </pre>
-            </dl>
+                </dl>
 
-            <p>
-                Ondergetekenden verklaren dat de sleutel <strong><?= htmlspecialchars($sleutel['naam']) ?></strong>
-                op <strong><?= htmlspecialchars($huidigTijdstip) ?></strong> in goede orde is geretourneerd door
-                <strong><?= htmlspecialchars($uitlenerNaam) ?></strong>
-                (<?= htmlspecialchars($uitlenerEmail) ?>).
-            </p>
+                <p>
+                    Ondergetekenden verklaren dat de sleutel <strong><?= htmlspecialchars($sleutel['naam']) ?></strong>
+                    op <strong><?= htmlspecialchars($huidigTijdstip) ?></strong> in goede orde is geretourneerd door
+                    <strong><?= htmlspecialchars($uitlenerNaam) ?></strong>
+                    (<?= htmlspecialchars($uitlenerEmail) ?>).
+                </p>
 
-            <div class="signatures">
-                <div class="signature-block">
-                    <div class="signature-line">Handtekening sleutelbeheerder</div>
-                </div>
-                <div class="signature-block">
-                    <div class="signature-line">Handtekening uitlener</div>
+                <div class="signatures">
+                    <div class="signature-block">
+                        <div class="signature-line">Handtekening sleutelbeheerder</div>
+                    </div>
+                    <div class="signature-block">
+                        <div class="signature-line">Handtekening uitlener</div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="actions-bottom">
-        <button type="button" class="btn-secondary btn" onclick="window.print();">
-            Print / opslaan als PDF
-        </button>
-
-        <form method="post" action="" onsubmit="return confirm('Weet je zeker dat je wilt bevestigen dat deze sleutel is teruggebracht?');">
-            <input type="hidden" name="id" value="<?= htmlspecialchars($sleutelId) ?>">
-            <input type="hidden" name="bevestig" value="1">
-            <button type="submit" class="btn">
-                Bevestig dat de sleutel is teruggebracht
+        <div class="actions-bottom">
+            <button type="button" class="btn-secondary btn" onclick="window.print();">
+                Print / opslaan als PDF
             </button>
-        </form>
+
+            <form method="post" action=""
+                onsubmit="return confirm('Weet je zeker dat je wilt bevestigen dat deze sleutel is teruggebracht?');">
+                <input type="hidden" name="id" value="<?= htmlspecialchars($sleutelId) ?>">
+                <input type="hidden" name="bevestig" value="1">
+                <button type="submit" class="btn">
+                    Bevestig dat de sleutel is teruggebracht
+                </button>
+            </form>
+        </div>
     </div>
-</div>
 </body>
+
 </html>

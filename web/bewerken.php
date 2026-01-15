@@ -9,22 +9,19 @@ error_reporting(E_ALL);
 // 1. Database openen
 $dbPath = __DIR__ . '/sleutels' . str_replace(" ", "_", $userName) . '.sqlite';
 
-try 
-{
+try {
     $db = new PDO('sqlite:' . $dbPath);
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} 
-catch (PDOException $e) 
-{
+} catch (PDOException $e) {
     die('Databasefout: ' . htmlspecialchars($e->getMessage()));
 }
 
 // 2. Sleutel-id ophalen
 $sleutelId = 0;
 if (isset($_GET['id'])) {
-    $sleutelId = (int)$_GET['id'];
+    $sleutelId = (int) $_GET['id'];
 } elseif (isset($_POST['id'])) {
-    $sleutelId = (int)$_POST['id'];
+    $sleutelId = (int) $_POST['id'];
 }
 
 if ($sleutelId <= 0) {
@@ -32,7 +29,8 @@ if ($sleutelId <= 0) {
 }
 
 // Helper
-function norm($s) {
+function norm($s)
+{
     return is_string($s) ? trim($s) : '';
 }
 
@@ -49,15 +47,15 @@ if (!$sleutel) {
 }
 
 // Formwaarden voor invulling
-$naam       = $sleutel['naam'];
-$tapkeyId   = $sleutel['tapkey_id'] ?? '';
+$naam = $sleutel['naam'];
+$tapkeyId = $sleutel['tapkey_id'] ?? '';
 $toegangTot = $sleutel['toegang'] ?? '';
 $opslagplek = $sleutel['opslagplek'] ?? '';
 
 // 4. POST: opslaan wijzigingen
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $naam       = norm($_POST['naam'] ?? '');
-    $tapkeyId   = norm($_POST['tapkey_id'] ?? '');
+    $naam = norm($_POST['naam'] ?? '');
+    $tapkeyId = norm($_POST['tapkey_id'] ?? '');
     $toegangTot = norm($_POST['toegang'] ?? '');
     $opslagplek = norm($_POST['opslagplek'] ?? '');
 
@@ -74,10 +72,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ");
         $stmt->execute([
             ':naam' => $naam,
-            ':tapkey_id'   => $tapkeyId,
+            ':tapkey_id' => $tapkeyId,
             ':id' => $sleutelId
         ]);
-        $bestaatAl = (int)$stmt->fetchColumn() > 0;
+        $bestaatAl = (int) $stmt->fetchColumn() > 0;
 
         if ($bestaatAl) {
             $errors[] = 'Er bestaat al een sleutel met deze Naam-ID combinatie. Kies een andere naam of ID.';
@@ -96,11 +94,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         try {
             $stmt->execute([
-                ':naam'       => $naam,
-                ':tapkey_id'  => $tapkeyId !== '' ? $tapkeyId : null,
+                ':naam' => $naam,
+                ':tapkey_id' => $tapkeyId !== '' ? $tapkeyId : null,
                 ':opslagplek' => $opslagplek,
-                ':toegang'    => $toegangTot,
-                ':id'         => $sleutelId,
+                ':toegang' => $toegangTot,
+                ':id' => $sleutelId,
             ]);
 
             // Optie A: direct terug naar index
@@ -122,6 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 <!DOCTYPE html>
 <html lang="nl">
+
 <head>
     <meta charset="UTF-8">
     <title>Sleutel bewerken</title>
@@ -132,33 +131,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             margin: 0;
             padding: 0;
         }
+
         .container {
             max-width: 600px;
             margin: 40px auto;
             background: #ffffff;
             padding: 24px;
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
+
         h1 {
             margin-top: 0;
             font-size: 1.4rem;
             text-align: center;
         }
+
         .back-link {
             margin-bottom: 16px;
         }
+
         .back-link a {
             text-decoration: none;
             color: #007acc;
             font-size: 0.85rem;
         }
+
         .back-link a:hover {
             text-decoration: underline;
         }
+
         .messages {
             margin-bottom: 12px;
         }
+
         .error {
             background: #ffe6e6;
             color: #a30000;
@@ -168,6 +174,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             margin-bottom: 6px;
             font-size: 0.85rem;
         }
+
         .success {
             background: #e6ffed;
             color: #036b21;
@@ -176,11 +183,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-radius: 4px;
             font-size: 0.85rem;
         }
+
         label {
             display: block;
             margin-bottom: 4px;
             font-weight: 600;
         }
+
         input[type="text"] {
             width: 100%;
             padding: 8px 10px;
@@ -190,6 +199,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             box-sizing: border-box;
             font-size: 0.9rem;
         }
+
         .btn {
             display: inline-block;
             padding: 8px 16px;
@@ -202,15 +212,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             text-decoration: none;
             font-size: 0.9rem;
         }
+
         .btn:hover {
             background: #005fa1;
         }
+
         .btn-secondary {
             background: #777;
         }
+
         .btn-secondary:hover {
             background: #555;
         }
+
         .form-actions {
             margin-top: 16px;
             display: flex;
@@ -219,66 +233,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flex-wrap: wrap;
         }
     </style>
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="manifest" href="site.webmanifest">
 </head>
+
 <body>
-<div class="container">
-    <div class="back-link">
-        <a href="index.php">&larr; Terug naar overzicht</a>
-    </div>
-
-    <h1>Sleutel bewerken</h1>
-
-    <div class="messages">
-        <?php foreach ($errors as $err): ?>
-            <div class="error"><?= htmlspecialchars($err) ?></div>
-        <?php endforeach; ?>
-
-        <?php if ($successMessage): ?>
-            <div class="success"><?= htmlspecialchars($successMessage) ?></div>
-        <?php endif; ?>
-    </div>
-
-    <form method="post" action="">
-        <input type="hidden" name="id" value="<?= htmlspecialchars($sleutelId) ?>">
-
-        <label for="naam">Naam</label>
-        <input
-            type="text"
-            id="naam"
-            name="naam"
-            value="<?= htmlspecialchars($naam) ?>"
-            required
-        />
-
-        <label for="tapkey_id">Sleutel ID</label>
-        <input
-            type="text"
-            id="tapkey_id"
-            name="tapkey_id"
-            value="<?= htmlspecialchars($tapkeyId) ?>"
-        />
-
-        <label for="opslagplek">Opslagplek</label>
-        <input
-            type="text"
-            id="opslagplek"
-            name="opslagplek"
-            value="<?= htmlspecialchars($opslagplek) ?>"
-        />
-        
-        <label for="toegang">De sleutel geeft toegang tot:</label>
-        <input
-            type="text"
-            id="toegang"
-            name="toegang"
-            value="<?= htmlspecialchars($toegangTot) ?>"
-        />
-
-        <div class="form-actions">
-            <button type="submit" class="btn">Opslaan</button>
-            <a href="index.php" class="btn btn-secondary">Annuleren</a>
+    <div class="container">
+        <div class="back-link">
+            <a href="index.php">&larr; Terug naar overzicht</a>
         </div>
-    </form>
-</div>
+
+        <h1>Sleutel bewerken</h1>
+
+        <div class="messages">
+            <?php foreach ($errors as $err): ?>
+                <div class="error"><?= htmlspecialchars($err) ?></div>
+            <?php endforeach; ?>
+
+            <?php if ($successMessage): ?>
+                <div class="success"><?= htmlspecialchars($successMessage) ?></div>
+            <?php endif; ?>
+        </div>
+
+        <form method="post" action="">
+            <input type="hidden" name="id" value="<?= htmlspecialchars($sleutelId) ?>">
+
+            <label for="naam">Naam</label>
+            <input type="text" id="naam" name="naam" value="<?= htmlspecialchars($naam) ?>" required />
+
+            <label for="tapkey_id">Sleutel ID</label>
+            <input type="text" id="tapkey_id" name="tapkey_id" value="<?= htmlspecialchars($tapkeyId) ?>" />
+
+            <label for="opslagplek">Opslagplek</label>
+            <input type="text" id="opslagplek" name="opslagplek" value="<?= htmlspecialchars($opslagplek) ?>" />
+
+            <label for="toegang">De sleutel geeft toegang tot:</label>
+            <input type="text" id="toegang" name="toegang" value="<?= htmlspecialchars($toegangTot) ?>" />
+
+            <div class="form-actions">
+                <button type="submit" class="btn">Opslaan</button>
+                <a href="index.php" class="btn btn-secondary">Annuleren</a>
+            </div>
+        </form>
+    </div>
 </body>
+
 </html>

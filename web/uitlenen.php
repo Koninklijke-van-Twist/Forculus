@@ -14,9 +14,9 @@ try {
 // 2. Sleutel-id ophalen
 $sleutelId = 0;
 if (isset($_GET['id'])) {
-    $sleutelId = (int)$_GET['id'];
+    $sleutelId = (int) $_GET['id'];
 } elseif (isset($_POST['id'])) {
-    $sleutelId = (int)$_POST['id'];
+    $sleutelId = (int) $_POST['id'];
 }
 
 if ($sleutelId <= 0) {
@@ -71,7 +71,8 @@ $uitgeleendTotFormatted = '';
 $uitgeleendTotTs = null;
 
 // Helper: veilige trim
-function norm($s) {
+function norm($s)
+{
     return is_string($s) ? trim($s) : '';
 }
 
@@ -92,21 +93,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $onbeperktUitlenen = false;
 
-        if($onbeperktChecked)
-        {
+        if ($onbeperktChecked) {
             $onbeperktUitlenen = true;
             $totTs = -1;
-        }
-        else if ($selectedVanafRaw === '')
-        {
+        } else if ($selectedVanafRaw === '') {
             $errors[] = "Er is een onjuiste startdatum geselecteerd.";
-        }
-        else if ($selectedTotRaw === '') 
-        {
+        } else if ($selectedTotRaw === '') {
             $errors[] = 'Kies een einddatum of vink "Onbeperkte tijd" aan.';
-        } 
-        else 
-        {
+        } else {
             // Verwacht formaat: 'YYYY-MM-DDTHH:MM' (datetime-local)
             $totTs = strtotime($selectedTotRaw);
             $vanafTs = strtotime($selectedVanafRaw);
@@ -118,7 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $uitgeleendVanafTs = $vanafTs;
                 $uitgeleendVanafFormatted = date('d-m-Y', $uitgeleendVanafTs);
                 $uitgeleendTotTs = $totTs;
-                $uitgeleendTotFormatted = $totTs >= 0? date('d-m-Y', $uitgeleendTotTs) : "Onbeperkte tijd";
+                $uitgeleendTotFormatted = $totTs >= 0 ? date('d-m-Y', $uitgeleendTotTs) : "Onbeperkte tijd";
             }
         }
 
@@ -132,8 +126,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($step === 'confirm') {
         // Stap 2: gebruiker bevestigt uitgifte na certificaat
         $confirmUserId = norm($_POST['user_id'] ?? '');
-        $confirmTotTs  = $_POST['tot_ts'] ?? null;
-        $confirmVanafTs  = $_POST['vanaf_ts'] ?? date('Y-m-d');
+        $confirmTotTs = $_POST['tot_ts'] ?? null;
+        $confirmVanafTs = $_POST['vanaf_ts'] ?? date('Y-m-d');
 
         if ($confirmUserId === '') {
             $errors[] = 'Ongeldige gebruiker bij bevestiging.';
@@ -149,8 +143,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (empty($errors)) {
             $nu = time();
-            $totTs = (int)$confirmTotTs;
-            $vanafTs = (int)$confirmVanafTs;
+            $totTs = (int) $confirmTotTs;
+            $vanafTs = (int) $confirmVanafTs;
 
             $stmt = $db->prepare("
                 UPDATE sleutels
@@ -160,10 +154,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 WHERE id = :id
             ");
             $stmt->execute([
-                ':op'  => $vanafTs,
+                ':op' => $vanafTs,
                 ':tot' => $totTs,
                 ':aan' => $confirmUserId,
-                ':id'  => $sleutelId,
+                ':id' => $sleutelId,
             ]);
 
             header('Location: index.php?status=lent');
@@ -177,6 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 <!DOCTYPE html>
 <html lang="nl">
+
 <head>
     <meta charset="UTF-8">
     <title>Sleutel uitlenen</title>
@@ -187,33 +182,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             margin: 0;
             padding: 0;
         }
+
         .container {
             max-width: 960px;
             margin: 40px auto;
             background: #ffffff;
             padding: 24px;
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
+
         h1 {
             margin-top: 0;
             font-size: 1.6rem;
             text-align: center;
         }
+
         .back-link {
             margin-bottom: 16px;
         }
+
         .back-link a {
             text-decoration: none;
             color: #007acc;
             font-size: 0.85rem;
         }
+
         .back-link a:hover {
             text-decoration: underline;
         }
+
         .messages {
             margin-bottom: 12px;
         }
+
         .error {
             background: #ffe6e6;
             color: #a30000;
@@ -223,16 +225,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             margin-bottom: 6px;
             font-size: 0.85rem;
         }
+
         .info {
             margin-bottom: 16px;
             font-size: 0.9rem;
         }
+
         label {
             display: block;
             margin-bottom: 4px;
             font-weight: 600;
         }
-        select, input[type="text"], input[type="datetime-local"] {
+
+        select,
+        input[type="text"],
+        input[type="datetime-local"] {
             width: 100%;
             padding: 8px 10px;
             margin-bottom: 12px;
@@ -241,6 +248,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             box-sizing: border-box;
             font-size: 0.9rem;
         }
+
         .btn {
             display: inline-block;
             padding: 8px 16px;
@@ -253,24 +261,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             text-decoration: none;
             font-size: 0.9rem;
         }
+
         .btn:hover {
             background: #005fa1;
         }
+
         .btn-secondary {
             background: #777;
         }
+
         .btn-secondary:hover {
             background: #555;
         }
+
         .certificate-wrapper {
             margin-top: 24px;
         }
+
         .certificate {
             background: #ffffff;
             border: 1px solid #ddd;
             padding: 32px;
             border-radius: 6px;
         }
+
         .certificate h2 {
             text-align: center;
             margin-top: 0;
@@ -278,20 +292,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             letter-spacing: 1px;
             font-size: 1.2rem;
         }
+
         .certificate p {
             line-height: 1.5;
             font-size: 0.95rem;
         }
+
         .certificate-details {
             margin: 16px 0;
             font-size: 0.9rem;
         }
+
         .certificate-details dt {
             font-weight: 600;
         }
+
         .certificate-details dd {
             margin: 0 0 8px 0;
         }
+
         .signatures {
             margin-top: 32px;
             display: flex;
@@ -299,9 +318,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             gap: 40px;
             font-size: 0.9rem;
         }
+
         .signature-block {
             flex: 1;
         }
+
         .signature-line {
             margin-top: 40px;
             border-top: 1px solid #000;
@@ -309,6 +330,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             text-align: center;
             font-size: 0.8rem;
         }
+
         .actions-bottom {
             margin-top: 24px;
             display: flex;
@@ -316,15 +338,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flex-wrap: wrap;
             gap: 8px;
         }
+
         @media print {
             body {
                 background: #ffffff;
             }
+
             .container {
                 box-shadow: none;
                 margin: 0;
                 border-radius: 0;
             }
+
             .back-link,
             .info,
             .actions-bottom,
@@ -333,201 +358,201 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     </style>
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="manifest" href="site.webmanifest">
 </head>
+
 <body>
-<div class="container">
-    <div class="back-link">
-        <a href="index.php">&larr; Terug naar overzicht</a>
-    </div>
-
-    <h1>Sleutel uitlenen – <?= htmlspecialchars($sleutel['naam']) ?></h1>
-
-    <div class="messages">
-        <?php foreach ($errors as $err): ?>
-            <div class="error"><?= htmlspecialchars($err) ?></div>
-        <?php endforeach; ?>
-    </div>
-
-    <?php if ($mode === 'form'): ?>
-        <div class="info">
-            <p>
-                Kies de medewerker aan wie je de sleutel wilt uitlenen, en tot welke datum/tijd.
-                Na het versturen wordt een certificaat van uitgifte getoond, dat je eerst kunt printen of opslaan.
-                Pas na bevestiging wordt de uitgifte in de database geregistreerd.
-<br/>
-                Deze sleutel geeft toegang tot: <?= $sleutel['toegang'] ?? "(Onbekend)" ?>.
-            </p>
+    <div class="container">
+        <div class="back-link">
+            <a href="index.php">&larr; Terug naar overzicht</a>
         </div>
 
-        <form method="post" action="">
-            <input type="hidden" name="id" value="<?= htmlspecialchars($sleutelId) ?>">
-            <input type="hidden" name="step" value="generate">
+        <h1>Sleutel uitlenen – <?= htmlspecialchars($sleutel['naam']) ?></h1>
 
-            <label for="user_id">Uitlenen aan:</label>
-            <input type="text" id="user_id" name="user_id" list="userlist" required/>
-            <datalist id="userlist">>
-            <?php foreach ($users as $u): ?>
-                <?php
-                $uid = $u['Id'] ?? '';
-                $uname = $u['Naam'] ?? '(naam onbekend)';
-                $uemail = $u['Email'] ?? '';
-                $label = $uname . ($uemail ? " ({$uemail})" : '');
-                ?>
-                <option value="<?= htmlspecialchars($uid) ?>"
-                    <?= ($uid === $selectedUserId) ? 'selected' : '' ?>>
-                    <?= htmlspecialchars($label) ?>
-                </option>
+        <div class="messages">
+            <?php foreach ($errors as $err): ?>
+                <div class="error"><?= htmlspecialchars($err) ?></div>
             <?php endforeach; ?>
-            </datalist>
-
-            <label for="vanaf_datumtijd">Uitgeleend vanaf:</label>
-            <input
-                type="date"
-                id="vanaf_datumtijd"
-                name="vanaf_datumtijd"
-                value="<?= htmlspecialchars($selectedVanafRaw) ?>"
-            />
-
-            <label for="tot_datumtijd">Uitgeleend tot:</label>
-            <input
-                type="date"
-                id="tot_datumtijd"
-                name="tot_datumtijd"
-                value="<?= htmlspecialchars($selectedTotRaw) ?>"
-            />
-            
-            <label style="display:flex; align-items:center; gap:6px; margin-top:4px;">
-            <input
-                type="checkbox"
-                id="onbeperkt"
-                name="onbeperkt"
-                value="1"
-                checked
-                <?= $onbeperktChecked ? 'checked' : '' ?>
-            />
-            Onbeperkte tijd
-        </label>
-        <small style="color:#666;">
-            Als je een einddatum kiest, wordt de sleutel uiterlijk dan terugverwacht. 
-            Met “Onbeperkte tijd” blijft het veld leeg.
-        </small>
-
-            <br/><br/>
-
-            <button type="submit" class="btn">Genereer certificaat</button>
-        </form>
-        <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const cb = document.getElementById('onbeperkt');
-    const dateInput = document.getElementById('tot_datumtijd');
-
-        console.log("hoi")
-    if (!cb || !dateInput) return;
-        console.log("hallo")
-
-    function updateDateState() {
-        console.log("checked changed")
-        if (cb.checked) {
-            dateInput.value = '';
-            //dateInput.disabled = true;
-        } else {
-            //dateInput.disabled = false;
-        }
-    }
-
-    cb.addEventListener('change', updateDateState);
-    dateInput.addEventListener('input', function () {
-        if (dateInput.value !== '') {
-            cb.checked = false;
-        }
-    });
-    updateDateState(); // initiale staat op basis van PHP (checked/unchecked)
-});
-</script>
-    <?php elseif ($mode === 'certificate'): ?>
-        <?php
-        // Deze waarden zijn bij POST generate gezet
-        $uitlenerNaam  = $uitlenerNaam ?: $userById[$selectedUserId]['Naam'] ?? 'Bananen';
-        $uitlenerEmail = $uitlenerEmail ?: $userById[$selectedUserId]['Email'] ?? '(Handmatige invoer)';
-        if (!$uitgeleendTotTs && $selectedTotRaw) {
-            $uitgeleendTotTs = $totTs === -1? "Onbeperkte tijd" : strtotime($selectedTotRaw);
-        }
-        if (!$uitgeleendVanafTs && $selectedVanafRaw) {
-            $uitgeleendVanafTs = strtotime($selectedVanafRaw);
-        }
-        $uitgeleendVanafFormatted = $uitgeleendVanafFormatted ?: date('d-m-Y', $uitgeleendVanafTs);
-        $uitgeleendTotFormatted = $totTs === -1? "Onbeperkte tijd" : ($uitgeleendTotFormatted ?: date('d-m-Y', $uitgeleendTotTs));
-        ?>
-        <div class="info">
-            <p>
-                Hieronder staat het certificaat voor de uitgifte van de sleutel
-                <strong><?= htmlspecialchars($sleutel['naam']) ?></strong>.
-            </p>
-            <p>
-                <strong>Belangrijk:</strong> Print of sla dit document eerst op als bewijs.
-                Pas daarna kun je bevestigen dat de sleutel is uitgeleend.
-                Zolang je niet bevestigt, wordt er <strong>geen wijziging</strong> in de database doorgevoerd.
-            </p>
         </div>
 
-        <div class="certificate-wrapper">
-            <div class="certificate">
-                <h2>Bevestiging van uitgifte</h2>
-
+        <?php if ($mode === 'form'): ?>
+            <div class="info">
                 <p>
-                    Dit document dient als bevestiging dat de onderstaande sleutel is uitgegeven aan de genoemde medewerker.
+                    Kies de medewerker aan wie je de sleutel wilt uitlenen, en tot welke datum/tijd.
+                    Na het versturen wordt een certificaat van uitgifte getoond, dat je eerst kunt printen of opslaan.
+                    Pas na bevestiging wordt de uitgifte in de database geregistreerd.
+                    <br />
+                    Deze sleutel geeft toegang tot: <?= $sleutel['toegang'] ?? "(Onbekend)" ?>.
                 </p>
+            </div>
 
-                <dl class="certificate-details">
-<pre>
-<b>Sleutelnaam:</b>&#9;&#9;<t><?= htmlspecialchars($sleutel['naam']) ?></t>
-<b>Sleutel ID:</b>&#9;&#9;<t>(<?= $sleutel['id'] ?>) <?= $sleutel['tapkey_id'] ?></t>
+            <form method="post" action="">
+                <input type="hidden" name="id" value="<?= htmlspecialchars($sleutelId) ?>">
+                <input type="hidden" name="step" value="generate">
 
-<b>Opslagplek:</b>&#9;&#9;<t><?= htmlspecialchars($sleutel['opslagplek'] ?? '') ?></t>
-<b>Geeft toegang tot:</b>&#9;<t><?= $sleutel['toegang'] ?? "(Onbekend)" ?></t>
+                <label for="user_id">Uitlenen aan:</label>
+                <input type="text" id="user_id" name="user_id" list="userlist" required />
+                <datalist id="userlist">>
+                    <?php foreach ($users as $u): ?>
+                        <?php
+                        $uid = $u['Id'] ?? '';
+                        $uname = $u['Naam'] ?? '(naam onbekend)';
+                        $uemail = $u['Email'] ?? '';
+                        $label = $uname . ($uemail ? " ({$uemail})" : '');
+                        ?>
+                        <option value="<?= htmlspecialchars($uid) ?>" <?= ($uid === $selectedUserId) ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($label) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </datalist>
 
-<b>Uitgegeven aan:</b>&#9;&#9;<t><?= htmlspecialchars($uitlenerNaam) ?> (<?= htmlspecialchars($uitlenerEmail) ?>)</t>
-<b>Uitgegeven op:</b>&#9;&#9;<t><?= htmlspecialchars($uitgeleendVanafFormatted) ?></t>
-<b>Uitgeleend tot:</b>&#9;&#9;<t><?= htmlspecialchars($uitgeleendTotFormatted) ?></t>
-</pre>
-                </dl>
+                <label for="vanaf_datumtijd">Uitgeleend vanaf:</label>
+                <input type="date" id="vanaf_datumtijd" name="vanaf_datumtijd"
+                    value="<?= htmlspecialchars($selectedVanafRaw) ?>" />
 
+                <label for="tot_datumtijd">Uitgeleend tot:</label>
+                <input type="date" id="tot_datumtijd" name="tot_datumtijd"
+                    value="<?= htmlspecialchars($selectedTotRaw) ?>" />
+
+                <label style="display:flex; align-items:center; gap:6px; margin-top:4px;">
+                    <input type="checkbox" id="onbeperkt" name="onbeperkt" value="1" checked <?= $onbeperktChecked ? 'checked' : '' ?> />
+                    Onbeperkte tijd
+                </label>
+                <small style="color:#666;">
+                    Als je een einddatum kiest, wordt de sleutel uiterlijk dan terugverwacht.
+                    Met “Onbeperkte tijd” blijft het veld leeg.
+                </small>
+
+                <br /><br />
+
+                <button type="submit" class="btn">Genereer certificaat</button>
+            </form>
+            <script>
+                document.addEventListener('DOMContentLoaded', function ()
+                {
+                    const cb = document.getElementById('onbeperkt');
+                    const dateInput = document.getElementById('tot_datumtijd');
+
+                    console.log("hoi")
+                    if (!cb || !dateInput) return;
+                    console.log("hallo")
+
+                    function updateDateState ()
+                    {
+                        console.log("checked changed")
+                        if (cb.checked)
+                        {
+                            dateInput.value = '';
+                            //dateInput.disabled = true;
+                        } else
+                        {
+                            //dateInput.disabled = false;
+                        }
+                    }
+
+                    cb.addEventListener('change', updateDateState);
+                    dateInput.addEventListener('input', function ()
+                    {
+                        if (dateInput.value !== '')
+                        {
+                            cb.checked = false;
+                        }
+                    });
+                    updateDateState(); // initiale staat op basis van PHP (checked/unchecked)
+                });
+            </script>
+        <?php elseif ($mode === 'certificate'): ?>
+            <?php
+            // Deze waarden zijn bij POST generate gezet
+            $uitlenerNaam = $uitlenerNaam ?: $userById[$selectedUserId]['Naam'] ?? 'Bananen';
+            $uitlenerEmail = $uitlenerEmail ?: $userById[$selectedUserId]['Email'] ?? '(Handmatige invoer)';
+            if (!$uitgeleendTotTs && $selectedTotRaw) {
+                $uitgeleendTotTs = $totTs === -1 ? "Onbeperkte tijd" : strtotime($selectedTotRaw);
+            }
+            if (!$uitgeleendVanafTs && $selectedVanafRaw) {
+                $uitgeleendVanafTs = strtotime($selectedVanafRaw);
+            }
+            $uitgeleendVanafFormatted = $uitgeleendVanafFormatted ?: date('d-m-Y', $uitgeleendVanafTs);
+            $uitgeleendTotFormatted = $totTs === -1 ? "Onbeperkte tijd" : ($uitgeleendTotFormatted ?: date('d-m-Y', $uitgeleendTotTs));
+            ?>
+            <div class="info">
                 <p>
-                    Ondergetekenden verklaren dat de sleutel <strong><?= htmlspecialchars($sleutel['naam']) ?></strong>
-                    op <strong><?= htmlspecialchars($uitgeleendVanafFormatted) ?></strong> is uitgegeven aan
-                    <strong><?= htmlspecialchars($uitlenerNaam) ?></strong>
-                    (<?= htmlspecialchars($uitlenerEmail) ?>)<?php if ($totTs >= 0): ?>, en uiterlijk dient te worden geretourneerd op
-                    <strong><?= htmlspecialchars($uitgeleendTotFormatted) ?></strong>.<?php endif ?>
+                    Hieronder staat het certificaat voor de uitgifte van de sleutel
+                    <strong><?= htmlspecialchars($sleutel['naam']) ?></strong>.
                 </p>
+                <p>
+                    <strong>Belangrijk:</strong> Print of sla dit document eerst op als bewijs.
+                    Pas daarna kun je bevestigen dat de sleutel is uitgeleend.
+                    Zolang je niet bevestigt, wordt er <strong>geen wijziging</strong> in de database doorgevoerd.
+                </p>
+            </div>
 
-                <div class="signatures">
-                    <div class="signature-block">
-                        <div class="signature-line">Handtekening sleutelbeheerder</div>
-                    </div>
-                    <div class="signature-block">
-                        <div class="signature-line">Handtekening uitlener</div>
+            <div class="certificate-wrapper">
+                <div class="certificate">
+                    <h2>Bevestiging van uitgifte</h2>
+
+                    <p>
+                        Dit document dient als bevestiging dat de onderstaande sleutel is uitgegeven aan de genoemde
+                        medewerker.
+                    </p>
+
+                    <dl class="certificate-details">
+                        <pre>
+    <b>Sleutelnaam:</b>&#9;&#9;<t><?= htmlspecialchars($sleutel['naam']) ?></t>
+    <b>Sleutel ID:</b>&#9;&#9;<t>(<?= $sleutel['id'] ?>) <?= $sleutel['tapkey_id'] ?></t>
+
+    <b>Opslagplek:</b>&#9;&#9;<t><?= htmlspecialchars($sleutel['opslagplek'] ?? '') ?></t>
+    <b>Geeft toegang tot:</b>&#9;<t><?= $sleutel['toegang'] ?? "(Onbekend)" ?></t>
+
+    <b>Uitgegeven aan:</b>&#9;&#9;<t><?= htmlspecialchars($uitlenerNaam) ?> (<?= htmlspecialchars($uitlenerEmail) ?>)</t>
+    <b>Uitgegeven op:</b>&#9;&#9;<t><?= htmlspecialchars($uitgeleendVanafFormatted) ?></t>
+    <b>Uitgeleend tot:</b>&#9;&#9;<t><?= htmlspecialchars($uitgeleendTotFormatted) ?></t>
+    </pre>
+                    </dl>
+
+                    <p>
+                        Ondergetekenden verklaren dat de sleutel <strong><?= htmlspecialchars($sleutel['naam']) ?></strong>
+                        op <strong><?= htmlspecialchars($uitgeleendVanafFormatted) ?></strong> is uitgegeven aan
+                        <strong><?= htmlspecialchars($uitlenerNaam) ?></strong>
+                        (<?= htmlspecialchars($uitlenerEmail) ?>)<?php if ($totTs >= 0): ?>, en uiterlijk dient te worden
+                            geretourneerd op
+                            <strong><?= htmlspecialchars($uitgeleendTotFormatted) ?></strong>.<?php endif ?>
+                    </p>
+
+                    <div class="signatures">
+                        <div class="signature-block">
+                            <div class="signature-line">Handtekening sleutelbeheerder</div>
+                        </div>
+                        <div class="signature-block">
+                            <div class="signature-line">Handtekening uitlener</div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="actions-bottom">
-            <button type="button" class="btn-secondary btn" onclick="window.print();">
-                Print / opslaan als PDF
-            </button>
-
-            <form method="post" action="" onsubmit="return confirm('Weet je zeker dat je deze uitgifte wilt bevestigen?');">
-                <input type="hidden" name="step" value="confirm">
-                <input type="hidden" name="id" value="<?= htmlspecialchars($sleutelId) ?>">
-                <input type="hidden" name="user_id" value="<?= htmlspecialchars($selectedUserId) ?>">
-                <input type="hidden" name="tot_ts" value="<?= $totTs === -1? -1 : htmlspecialchars($uitgeleendTotTs) ?>">
-                <input type="hidden" name="vanaf_ts" value="<?= htmlspecialchars($uitgeleendVanafTs) ?>">
-                <button type="submit" class="btn">
-                    Bevestig uitgifte
+            <div class="actions-bottom">
+                <button type="button" class="btn-secondary btn" onclick="window.print();">
+                    Print / opslaan als PDF
                 </button>
-            </form>
-        </div>
-    <?php endif; ?>
-</div>
+
+                <form method="post" action=""
+                    onsubmit="return confirm('Weet je zeker dat je deze uitgifte wilt bevestigen?');">
+                    <input type="hidden" name="step" value="confirm">
+                    <input type="hidden" name="id" value="<?= htmlspecialchars($sleutelId) ?>">
+                    <input type="hidden" name="user_id" value="<?= htmlspecialchars($selectedUserId) ?>">
+                    <input type="hidden" name="tot_ts"
+                        value="<?= $totTs === -1 ? -1 : htmlspecialchars($uitgeleendTotTs) ?>">
+                    <input type="hidden" name="vanaf_ts" value="<?= htmlspecialchars($uitgeleendVanafTs) ?>">
+                    <button type="submit" class="btn">
+                        Bevestig uitgifte
+                    </button>
+                </form>
+            </div>
+        <?php endif; ?>
+    </div>
 </body>
+
 </html>
