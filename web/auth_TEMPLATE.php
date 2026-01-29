@@ -1,7 +1,9 @@
 <?php
+/* uncomment if whitelisted
 $allowedUsers = [
     "user@domain.nl"
 ];
+*/
 
 function nameForUser($user)
 {
