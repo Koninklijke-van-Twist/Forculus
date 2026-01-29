@@ -1,7 +1,11 @@
 <?php
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
-$userName = $_SERVER['PHP_AUTH_USER'] ?? "DEBUG";
+
+require_once('logincheck.php');
+
+$userName = isset($_SESSION['user']) ? nameForUser($_SESSION['user']['email']) : "DEBUG";
+
 error_reporting(E_ALL);
 // Database openen of aanmaken
 $dbPath = __DIR__ . '/sleutels' . str_replace(" ", "_", $userName) . '.sqlite';
@@ -399,7 +403,8 @@ function formatTimestamp(?int $ts, $includeTime): string
                             </td>
                             <td <?php if ($s['tapkey_id'] <> null || $s['toegang'] <> null): ?>class="above" <?php endif; ?>
                                 data-sort="<?= $uitgeleendOp ?: 0 ?>">
-                                <?= $uitgeleendOpFormatted ? htmlspecialchars($uitgeleendOpFormatted) : '' ?></td>
+                                <?= $uitgeleendOpFormatted ? htmlspecialchars($uitgeleendOpFormatted) : '' ?>
+                            </td>
                             <td <?php if ($s['tapkey_id'] <> null || $s['toegang'] <> null): ?>class="above" <?php endif; ?>
                                 data-sort="<?= $uitgeleendTot ?: 0 ?>"> <span
                                     class="<?= $uitgeleendTotFormatted <> null && $uitgeleendTotFormatted <= date('d-m-Y') ? 'late-key' : 'ok-key' ?>"><?= $uitgeleendTotFormatted ? htmlspecialchars($uitgeleendTotFormatted) : '' ?></span>

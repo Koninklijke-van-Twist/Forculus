@@ -1,5 +1,6 @@
 <?php
-$userName = $_SERVER['PHP_AUTH_USER'] ?? "DEBUG";
+require_once('logincheck.php');
+$userName = isset($_SESSION['user']) ? nameForUser($_SESSION['user']['email']) : "DEBUG";
 // verwijderen.php
 
 ini_set('display_errors', 1);

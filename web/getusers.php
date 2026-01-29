@@ -1,5 +1,6 @@
 <?php
-$userName = $_SERVER['PHP_AUTH_USER'] ?? "DEBUG";
+require_once('logincheck.php');
+$userName = isset($_SESSION['user']) ? nameForUser($_SESSION['user']['email'] ) : "DEBUG";
 
 // ====== CONFIG ======
 $authFile = __DIR__ . '/auth.json';

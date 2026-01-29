@@ -1,6 +1,7 @@
 <?php
+require_once('logincheck.php');
 // uitlenen.php
-$userName = $_SERVER['PHP_AUTH_USER'] ?? "DEBUG";
+$userName = isset($_SESSION['user']) ? nameForUser($_SESSION['user']['email']) : "DEBUG";
 // 1. Database openen
 $dbPath = __DIR__ . '/sleutels' . str_replace(" ", "_", $userName) . '.sqlite';
 
@@ -501,16 +502,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <dl class="certificate-details">
                         <pre>
-    <b>Sleutelnaam:</b>&#9;&#9;<t><?= htmlspecialchars($sleutel['naam']) ?></t>
-    <b>Sleutel ID:</b>&#9;&#9;<t>(<?= $sleutel['id'] ?>) <?= $sleutel['tapkey_id'] ?></t>
+        <b>Sleutelnaam:</b>&#9;&#9;<t><?= htmlspecialchars($sleutel['naam']) ?></t>
+        <b>Sleutel ID:</b>&#9;&#9;<t>(<?= $sleutel['id'] ?>) <?= $sleutel['tapkey_id'] ?></t>
 
-    <b>Opslagplek:</b>&#9;&#9;<t><?= htmlspecialchars($sleutel['opslagplek'] ?? '') ?></t>
-    <b>Geeft toegang tot:</b>&#9;<t><?= $sleutel['toegang'] ?? "(Onbekend)" ?></t>
+        <b>Opslagplek:</b>&#9;&#9;<t><?= htmlspecialchars($sleutel['opslagplek'] ?? '') ?></t>
+        <b>Geeft toegang tot:</b>&#9;<t><?= $sleutel['toegang'] ?? "(Onbekend)" ?></t>
 
-    <b>Uitgegeven aan:</b>&#9;&#9;<t><?= htmlspecialchars($uitlenerNaam) ?> (<?= htmlspecialchars($uitlenerEmail) ?>)</t>
-    <b>Uitgegeven op:</b>&#9;&#9;<t><?= htmlspecialchars($uitgeleendVanafFormatted) ?></t>
-    <b>Uitgeleend tot:</b>&#9;&#9;<t><?= htmlspecialchars($uitgeleendTotFormatted) ?></t>
-    </pre>
+        <b>Uitgegeven aan:</b>&#9;&#9;<t><?= htmlspecialchars($uitlenerNaam) ?> (<?= htmlspecialchars($uitlenerEmail) ?>)</t>
+        <b>Uitgegeven op:</b>&#9;&#9;<t><?= htmlspecialchars($uitgeleendVanafFormatted) ?></t>
+        <b>Uitgeleend tot:</b>&#9;&#9;<t><?= htmlspecialchars($uitgeleendTotFormatted) ?></t>
+        </pre>
                     </dl>
 
                     <p>

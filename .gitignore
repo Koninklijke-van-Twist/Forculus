@@ -2,3 +2,5 @@
 *.json
 
 *.sqlite
+
+web/auth.php
