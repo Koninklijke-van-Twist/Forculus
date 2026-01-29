@@ -3,7 +3,7 @@ require_once('logincheck.php');
 $userName = isset($_SESSION['user']) ? nameForUser($_SESSION['user']['email']) : "DEBUG";
 
 // 1. Database openen
-$dbPath = __DIR__ . '/sleutels' . str_replace(" ", "_", $userName) . '.sqlite';
+$dbPath = __DIR__ . '/sleutels_' . str_replace(" ", "_", $userName) . '.sqlite';
 
 try {
     $db = new PDO('sqlite:' . $dbPath);
@@ -298,10 +298,10 @@ $uitgeleendTot = formatTimestampReadable($sleutel['uitgeleend_tot'] ?? null);
 <b>Uitgeleend aan:</b>&#9;&#9;&#9;<t><?= htmlspecialchars($uitlenerNaam) ?> (<?= htmlspecialchars($uitlenerEmail) ?>)</t>
 
 <?php if ($uitgeleendOp): ?>
-        <b>Oorspronkelijk uitgeleend op:</b>&#9;<t><?= ucfirst(htmlspecialchars($uitgeleendOp)) ?></t>
+            <b>Oorspronkelijk uitgeleend op:</b>&#9;<t><?= ucfirst(htmlspecialchars($uitgeleendOp)) ?></t>
 <?php endif; ?>
 <?php if ($uitgeleendTot && !$onbeperkt): ?>
-        <b>Oorspronkelijk uitgeleend tot:</b>&#9;<t><?= ucfirst(htmlspecialchars($uitgeleendTot)) ?></t>
+            <b>Oorspronkelijk uitgeleend tot:</b>&#9;<t><?= ucfirst(htmlspecialchars($uitgeleendTot)) ?></t>
 <?php endif; ?>
 <b>Geretourneerd op:</b>&#9;&#9;<t><?= ucfirst(htmlspecialchars($huidigTijdstip)) ?></t>
 </pre>

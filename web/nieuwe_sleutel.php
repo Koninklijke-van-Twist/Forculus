@@ -4,7 +4,7 @@ require_once('logincheck.php');
 $userName = isset($_SESSION['user']) ? nameForUser($_SESSION['user']['email']) : "DEBUG";
 
 // ---------- CONFIG ----------
-$dbPath = __DIR__ . '/sleutels' . str_replace(" ", "_", $userName) . '.sqlite';
+$dbPath = __DIR__ . '/sleutels_' . str_replace(" ", "_", $userName) . '.sqlite';
 
 // ---------- DATABASE VERBINDING ----------
 try {

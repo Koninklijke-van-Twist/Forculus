@@ -8,7 +8,7 @@ $userName = isset($_SESSION['user']) ? nameForUser($_SESSION['user']['email']) :
 
 error_reporting(E_ALL);
 // Database openen of aanmaken
-$dbPath = __DIR__ . '/sleutels' . str_replace(" ", "_", $userName) . '.sqlite';
+$dbPath = __DIR__ . '/sleutels_' . str_replace(" ", "_", $userName) . '.sqlite';
 $db = new PDO('sqlite:' . $dbPath);
 $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
