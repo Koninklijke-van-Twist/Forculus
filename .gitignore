@@ -4,3 +4,6 @@
 *.sqlite
 
 web/auth.php
+
+web/analytics/analytics.sqlite
+web/analytics/analytics.sqlite-*

@@ -49,6 +49,8 @@ jobs:
 
           mirror -R --delete \
             --exclude-glob .htaccess \
+            --exclude-glob analytics/*.sqlite \
+            --exclude-glob analytics/*.sqlite-* \
             --exclude-glob auth.php \
             --exclude-glob *.json \
             --exclude-glob *.sqlite \
