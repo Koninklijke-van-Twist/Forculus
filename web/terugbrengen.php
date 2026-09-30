@@ -1,13 +1,11 @@
 <?php
-require_once('logincheck.php');
+require_once __DIR__ . '/logincheck.php';
+require_once __DIR__ . '/sleutels_lib.php';
+require_once __DIR__ . '/ui.php';
 $userName = isset($_SESSION['user']) ? nameForUser($_SESSION['user']['email']) : "DEBUG";
 
-// 1. Database openen
-$dbPath = __DIR__ . '/sleutels_' . str_replace(" ", "_", $userName) . '.sqlite';
-
 try {
-    $db = new PDO('sqlite:' . $dbPath);
-    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $db = sleutels_open_db(sleutels_db_path($userName));
 } catch (PDOException $e) {
     die('Databasefout: ' . htmlspecialchars($e->getMessage()));
 }
@@ -103,172 +101,20 @@ $uitgeleendTot = formatTimestampReadable($sleutel['uitgeleend_tot'] ?? null);
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Sleutel terugbrengen – certificaat</title>
-    <style>
-        body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background: #f4f4f4;
-            margin: 0;
-            padding: 0;
-        }
-
-        .container {
-            max-width: 960px;
-            margin: 40px auto;
-            background: #ffffff;
-            padding: 24px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        }
-
-        h1 {
-            margin-top: 0;
-            font-size: 1.6rem;
-            text-align: center;
-        }
-
-        .back-link {
-            margin-bottom: 16px;
-        }
-
-        .back-link a {
-            text-decoration: none;
-            color: #007acc;
-            font-size: 0.85rem;
-        }
-
-        .back-link a:hover {
-            text-decoration: underline;
-        }
-
-        .info {
-            margin-bottom: 16px;
-            font-size: 0.9rem;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 8px 16px;
-            border-radius: 4px;
-            border: none;
-            background: #007acc;
-            color: #ffffff;
-            cursor: pointer;
-            font-weight: 600;
-            text-decoration: none;
-            font-size: 0.9rem;
-        }
-
-        .btn:hover {
-            background: #005fa1;
-        }
-
-        .btn-secondary {
-            background: #777;
-        }
-
-        .btn-secondary:hover {
-            background: #555;
-        }
-
-        .certificate-wrapper {
-            margin-top: 24px;
-        }
-
-        .certificate {
-            background: #ffffff;
-            border: 1px solid #ddd;
-            padding: 32px;
-            border-radius: 6px;
-        }
-
-        .certificate h2 {
-            text-align: center;
-            margin-top: 0;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-size: 1.2rem;
-        }
-
-        .certificate p {
-            line-height: 1.5;
-            font-size: 0.95rem;
-        }
-
-        .certificate-details {
-            margin: 16px 0;
-            font-size: 0.9rem;
-        }
-
-        .certificate-details dt {
-            font-weight: 600;
-        }
-
-        .certificate-details dd {
-            margin: 0 0 8px 0;
-        }
-
-        .signatures {
-            margin-top: 32px;
-            display: flex;
-            justify-content: space-between;
-            gap: 40px;
-            font-size: 0.9rem;
-        }
-
-        .signature-block {
-            flex: 1;
-        }
-
-        .signature-line {
-            margin-top: 40px;
-            border-top: 1px solid #000;
-            padding-top: 4px;
-            text-align: center;
-            font-size: 0.8rem;
-        }
-
-        .actions-bottom {
-            margin-top: 24px;
-            display: flex;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        @media print {
-            body {
-                background: #ffffff;
-            }
-
-            .container {
-                box-shadow: none;
-                margin: 0;
-                border-radius: 0;
-            }
-
-            .back-link,
-            .info,
-            .actions-bottom {
-                display: none;
-            }
-        }
-    </style>
-    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-    <link rel="manifest" href="site.webmanifest">
+    <?php forculus_assets(); ?>
 </head>
 
 <body>
     <div class="container">
-        <div class="back-link">
+        <div class="back-link no-print">
             <a href="index.php">&larr; Terug naar overzicht</a>
         </div>
 
         <h1>Sleutel terugbrengen</h1>
 
-        <div class="info">
+        <div class="info no-print">
             <p>
                 Hieronder staat het certificaat voor het terugbrengen van de sleutel
                 <strong><?= htmlspecialchars($sleutel['naam']) ?></strong>.
@@ -325,14 +171,16 @@ $uitgeleendTot = formatTimestampReadable($sleutel['uitgeleend_tot'] ?? null);
             </div>
         </div>
 
-        <div class="actions-bottom">
+        <div class="actions-bottom no-print">
             <button type="button" class="btn-secondary btn" onclick="window.print();">
                 Print / opslaan als PDF
             </button>
 
             <form method="post" action=""
-                onsubmit="return confirm('Weet je zeker dat je wilt bevestigen dat deze sleutel is teruggebracht?');">
-                <input type="hidden" name="id" value="<?= htmlspecialchars($sleutelId) ?>">
+                data-confirm="Weet je zeker dat je wilt bevestigen dat deze sleutel is teruggebracht?"
+                data-confirm-title="Terugbrengen bevestigen"
+                data-confirm-ok="Bevestig terugbrengen">
+                <input type="hidden" name="id" value="<?= htmlspecialchars((string) $sleutelId) ?>">
                 <input type="hidden" name="bevestig" value="1">
                 <button type="submit" class="btn">
                     Bevestig dat de sleutel is teruggebracht
@@ -340,6 +188,7 @@ $uitgeleendTot = formatTimestampReadable($sleutel['uitgeleend_tot'] ?? null);
             </form>
         </div>
     </div>
+    <?php forculus_modal(); ?>
 </body>
 
 </html>

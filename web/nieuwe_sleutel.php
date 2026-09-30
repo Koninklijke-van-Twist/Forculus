@@ -1,15 +1,11 @@
 <?php
-require_once('logincheck.php');
-// nieuwe_sleutel.php
+require_once __DIR__ . '/logincheck.php';
+require_once __DIR__ . '/sleutels_lib.php';
+require_once __DIR__ . '/ui.php';
 $userName = isset($_SESSION['user']) ? nameForUser($_SESSION['user']['email']) : "DEBUG";
 
-// ---------- CONFIG ----------
-$dbPath = __DIR__ . '/sleutels_' . str_replace(" ", "_", $userName) . '.sqlite';
-
-// ---------- DATABASE VERBINDING ----------
 try {
-    $db = new PDO('sqlite:' . $dbPath);
-    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $db = sleutels_open_db(sleutels_db_path($userName));
 } catch (PDOException $e) {
     die('Databasefout: ' . htmlspecialchars($e->getMessage()));
 }
@@ -76,104 +72,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Nieuwe sleutel aanmaken</title>
-    <style>
-        body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background: #f4f4f4;
-            margin: 0;
-            padding: 0;
-        }
-
-        #submit {
-            float: right;
-        }
-
-        .container {
-            max-width: 480px;
-            margin: 40px auto;
-            background: #ffffff;
-            padding: 24px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        }
-
-        h1 {
-            margin-top: 0;
-            font-size: 1.4rem;
-            text-align: center;
-        }
-
-        form {
-            margin-top: 16px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 4px;
-            font-weight: 600;
-        }
-
-        input[type="text"] {
-            width: 100%;
-            padding: 8px 10px;
-            margin-bottom: 12px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            box-sizing: border-box;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 8px 16px;
-            border-radius: 4px;
-            border: none;
-            background: #007acc;
-            color: #ffffff;
-            cursor: pointer;
-            font-weight: 600;
-        }
-
-        .btn:hover {
-            background: #005fa1;
-        }
-
-        .messages {
-            margin-bottom: 12px;
-        }
-
-        .error {
-            background: #ffe6e6;
-            color: #a30000;
-            border: 1px solid #f5b5b5;
-            padding: 8px 10px;
-            border-radius: 4px;
-            margin-bottom: 8px;
-        }
-
-        .success {
-            background: #e6ffed;
-            color: #036b21;
-            border: 1px solid #9be5b2;
-            padding: 8px 10px;
-            border-radius: 4px;
-        }
-
-        small {
-            color: #666;
-            display: block;
-            margin-top: -8px;
-            margin-bottom: 12px;
-        }
-    </style>
-    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-    <link rel="manifest" href="site.webmanifest">
+    <?php forculus_assets(); ?>
 </head>
 
 <body>
-    <div class="container">
+    <div class="container container-narrow">
+        <div class="back-link">
+            <a href="index.php">&larr; Terug naar overzicht</a>
+        </div>
         <h1>Nieuwe sleutel aanmaken</h1>
 
         <div class="messages">
@@ -189,25 +97,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
 
         <form method="post" action="">
-            <label for="naam">Naam van de sleutel</label>
-            <input type="text" id="naam" name="naam" value="<?= htmlspecialchars($naam) ?>" required />
-            <small>Deze naam moet uniek zijn, tenzij een Sleutel-ID toegevoegd wordt.</small>
+            <div class="field">
+                <label for="naam">Naam van de sleutel</label>
+                <input type="text" id="naam" name="naam" value="<?= htmlspecialchars($naam) ?>" required />
+                <small>Deze naam moet uniek zijn, tenzij een Sleutel-ID toegevoegd wordt.</small>
+            </div>
 
-            <label for="tapkey_id">Sleutel ID</label>
-            <input type="text" id="tapkey_id" name="tapkey_id" value="<?= htmlspecialchars($tapkeyId) ?>" />
-            <small>Optioneel (Naam-ID moet uniek zijn).</small>
+            <div class="field">
+                <label for="tapkey_id">Sleutel ID</label>
+                <input type="text" id="tapkey_id" name="tapkey_id" value="<?= htmlspecialchars($tapkeyId) ?>" />
+                <small>Optioneel (Naam-ID moet uniek zijn).</small>
+            </div>
 
-            <label for="opslagplek">Opslagplek</label>
-            <input type="text" id="opslagplek" name="opslagplek" value="<?= htmlspecialchars($opslagplek) ?>" />
-            <small>Optioneel.</small>
+            <div class="field">
+                <label for="opslagplek">Opslagplek</label>
+                <input type="text" id="opslagplek" name="opslagplek" value="<?= htmlspecialchars($opslagplek) ?>" />
+                <small>Optioneel.</small>
+            </div>
 
-            <label for="toegang">De sleutel geeft toegang tot:</label>
-            <input type="text" id="toegang" name="toegang" value="<?= htmlspecialchars($toegangTot) ?>" />
-            <small>Optioneel.</small>
-            <a href="index.php">&larr; Terug naar overzicht</a>
-            <button type="submit" class="btn" id="submit">Sleutel opslaan</button>
+            <div class="field">
+                <label for="toegang">De sleutel geeft toegang tot:</label>
+                <input type="text" id="toegang" name="toegang" value="<?= htmlspecialchars($toegangTot) ?>" />
+                <small>Optioneel.</small>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn" id="submit">Sleutel opslaan</button>
+                <a href="index.php" class="btn btn-secondary">Annuleren</a>
+            </div>
         </form>
     </div>
+    <?php forculus_modal(); ?>
 </body>
 
 </html>
