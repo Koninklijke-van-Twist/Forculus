@@ -460,10 +460,16 @@ function sleutels_copy_consistent($sourcePath, $destPath)
 
     if (class_exists('SQLite3')) {
         $src = new SQLite3($sourcePath, SQLITE3_OPEN_READONLY);
-        $dest = new SQLite3($destPath);
-        $ok = $src->backup($dest);
-        $dest->close();
-        $src->close();
+        try {
+            $dest = new SQLite3($destPath);
+            try {
+                $ok = $src->backup($dest);
+            } finally {
+                $dest->close();
+            }
+        } finally {
+            $src->close();
+        }
         if (!$ok) {
             throw new RuntimeException('SQLite-backup mislukt.');
         }
