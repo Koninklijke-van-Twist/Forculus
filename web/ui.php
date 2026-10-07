@@ -27,3 +27,18 @@ function forculus_modal()
     </div>
     <?php
 }
+
+function forculus_key_modal()
+{
+    ?>
+    <div class="modal-overlay" id="key-modal" hidden>
+        <div class="modal-dialog modal-dialog-wide" role="dialog" aria-modal="true" aria-labelledby="key-modal-title">
+            <h2 id="key-modal-title" tabindex="-1">Sleutel</h2>
+            <div id="key-modal-body" aria-live="polite"></div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" data-key-modal-close>Sluiten</button>
+            </div>
+        </div>
+    </div>
+    <?php
+}

@@ -681,3 +681,69 @@ th.sortable {
         display: none !important;
     }
 }
+
+/* Sleutel-infomodal */
+.key-link {
+    background: none;
+    border: 0;
+    padding: 0;
+    font: inherit;
+    color: var(--kvt);
+    text-align: left;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.key-link:hover {
+    color: var(--kvt-dark);
+}
+
+.key-link:focus-visible {
+    outline: 2px solid var(--kvt);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+.modal-dialog-wide {
+    width: min(640px, 100%);
+    max-width: 640px;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+}
+
+.modal-dialog h3 {
+    margin: 16px 0 6px;
+    font-size: 1rem;
+}
+
+.key-meta {
+    color: var(--muted);
+}
+
+.key-access {
+    margin: 0 0 8px;
+    padding-left: 20px;
+}
+
+.key-history {
+    list-style: none;
+    margin: 0 0 16px;
+    padding: 0;
+}
+
+.key-history li {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    line-height: 1.45;
+}
+
+.key-history li.is-open {
+    border-left: 4px solid var(--kvt);
+}
+
+#key-modal-title:focus {
+    outline: none;
+}

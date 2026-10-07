@@ -150,6 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':aan' => $confirmUserId,
                 ':id' => $sleutelId,
             ]);
+            sleutels_history_log_issue($db, $sleutelId, $confirmUserId, $vanafTs, $totTs);
 
             header('Location: index.php?status=lent');
             exit;

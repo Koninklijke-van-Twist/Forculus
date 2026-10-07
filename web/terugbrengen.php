@@ -25,6 +25,13 @@ if ($sleutelId <= 0) {
 // 3. Bij POST: gebruiker heeft het certificaat opgeslagen en bevestigt terugbrengen
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bevestig']) && $_POST['bevestig'] === '1') {
     // Database pas nu bijwerken: uitgeleend_* op NULL
+    $huidig = $db->prepare('SELECT * FROM sleutels WHERE id = :id');
+    $huidig->execute([':id' => $sleutelId]);
+    $huidigeSleutel = $huidig->fetch(PDO::FETCH_ASSOC);
+    if ($huidigeSleutel) {
+        sleutels_history_log_return($db, $sleutelId, $huidigeSleutel);
+    }
+
     $stmt = $db->prepare("
         UPDATE sleutels
         SET uitgeleend_op = NULL,
