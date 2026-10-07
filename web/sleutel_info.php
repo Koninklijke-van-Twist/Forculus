@@ -38,7 +38,8 @@ try {
 }
 
 $userById = [];
-$users = include __DIR__ . '/getusers.php';
+$getUsersFile = __DIR__ . '/getusers.php';
+$users = file_exists($getUsersFile) ? include $getUsersFile : [];
 if (is_array($users)) {
     foreach ($users as $u) {
         if (!empty($u['Id'])) {

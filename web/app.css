@@ -743,3 +743,7 @@ th.sortable {
 .key-history li.is-open {
     border-left: 4px solid var(--kvt);
 }
+
+#key-modal-title:focus {
+    outline: none;
+}

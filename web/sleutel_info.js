@@ -75,7 +75,7 @@
         bodyEl.appendChild(el('p', null, 'Laden…'));
         overlay.hidden = false;
         document.body.classList.add('modal-open');
-        closeBtn.focus();
+        titleEl.focus();
 
         fetch('sleutel_info.php?id=' + encodeURIComponent(id), { credentials: 'same-origin', headers: { Accept: 'application/json' } })
             .then(function (r) {

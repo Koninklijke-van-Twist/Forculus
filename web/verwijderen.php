@@ -28,9 +28,15 @@ if ($sleutelId <= 0) {
 
 // 3. Bij POST + bevestiging: sleutel verwijderen
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['bevestig'] ?? '') === '1') {
-    $db->prepare("DELETE FROM sleutel_historie WHERE sleutel_id = :id")->execute([':id' => $sleutelId]);
-    $stmt = $db->prepare("DELETE FROM sleutels WHERE id = :id");
-    $stmt->execute([':id' => $sleutelId]);
+    $db->beginTransaction();
+    try {
+        $db->prepare("DELETE FROM sleutel_historie WHERE sleutel_id = :id")->execute([':id' => $sleutelId]);
+        $db->prepare("DELETE FROM sleutels WHERE id = :id")->execute([':id' => $sleutelId]);
+        $db->commit();
+    } catch (Throwable $e) {
+        $db->rollBack();
+        throw $e;
+    }
 
     header('Location: index.php?status=deleted');
     exit;
