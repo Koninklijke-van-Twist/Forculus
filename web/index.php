@@ -159,7 +159,8 @@ if (isset($_GET['status'])) {
                         <tr>
                             <td <?php if ($hasExtra): ?>class="above" <?php endif; ?>
                                 data-sort="<?= htmlspecialchars($naam) . htmlspecialchars($s['tapkey_id'] ?? "") ?: 0 ?>">
-                                <?= htmlspecialchars($naam) ?>
+                                <button type="button" class="key-link" data-key-info="<?= $id ?>"
+                                    aria-haspopup="dialog"><?= htmlspecialchars($naam) ?></button>
                                 <?php if ($s['tapkey_id'] <> null): ?>
                                     <div class="below"> <?= "ID: " . htmlspecialchars((string) $s['tapkey_id']) ?></div>
                                 <?php elseif ($s['toegang'] <> null): ?>
@@ -207,9 +208,11 @@ if (isset($_GET['status'])) {
             </table>
             </div>
             <script src="overview.js"></script>
+            <script src="sleutel_info.js" defer></script>
         <?php endif; ?>
     </div>
     <?php forculus_modal(); ?>
+    <?php forculus_key_modal(); ?>
 </body>
 
 </html>

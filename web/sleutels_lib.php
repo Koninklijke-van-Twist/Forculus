@@ -51,6 +51,83 @@ function sleutels_ensure_schema(PDO $db)
             uitgeleend_aan  TEXT
         )
     ");
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS sleutel_historie (
+            id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+            sleutel_id         INTEGER NOT NULL,
+            uitgeleend_aan     TEXT,
+            uitgeleend_op      INTEGER,
+            uitgeleend_tot     INTEGER,
+            uitgegeven_door    TEXT,
+            teruggebracht_op   INTEGER,
+            teruggebracht_door TEXT
+        )
+    ");
+    $db->exec('CREATE INDEX IF NOT EXISTS idx_sleutel_historie_sleutel ON sleutel_historie (sleutel_id)');
+}
+
+/**
+ * Wie de actie uitvoert (ingelogde gebruiker), voor de uitgiftehistorie.
+ */
+function sleutels_actor()
+{
+    $email = isset($_SESSION['user']['email']) ? trim((string) $_SESSION['user']['email']) : '';
+    return $email !== '' ? $email : 'onbekend';
+}
+
+function sleutels_history_log_issue(PDO $db, $sleutelId, $aan, $opTs, $totTs)
+{
+    // Eventueel nog openstaande regel afsluiten (zou niet moeten voorkomen).
+    $db->prepare('UPDATE sleutel_historie SET teruggebracht_op = :nu, teruggebracht_door = :door
+                  WHERE sleutel_id = :id AND teruggebracht_op IS NULL')
+        ->execute([':nu' => time(), ':door' => sleutels_actor(), ':id' => (int) $sleutelId]);
+    $db->prepare('INSERT INTO sleutel_historie (sleutel_id, uitgeleend_aan, uitgeleend_op, uitgeleend_tot, uitgegeven_door)
+                  VALUES (:id, :aan, :op, :tot, :door)')
+        ->execute([
+            ':id' => (int) $sleutelId,
+            ':aan' => (string) $aan,
+            ':op' => (int) $opTs,
+            ':tot' => (int) $totTs,
+            ':door' => sleutels_actor(),
+        ]);
+}
+
+function sleutels_history_log_return(PDO $db, $sleutelId, array $sleutel)
+{
+    $stmt = $db->prepare('UPDATE sleutel_historie SET teruggebracht_op = :nu, teruggebracht_door = :door
+                          WHERE sleutel_id = :id AND teruggebracht_op IS NULL');
+    $stmt->execute([':nu' => time(), ':door' => sleutels_actor(), ':id' => (int) $sleutelId]);
+    if ($stmt->rowCount() === 0 && (!empty($sleutel['uitgeleend_op']) || !empty($sleutel['uitgeleend_tot']))) {
+        // Uitlening van voor de historie bestond: alsnog vastleggen, uitgever onbekend.
+        $db->prepare('INSERT INTO sleutel_historie (sleutel_id, uitgeleend_aan, uitgeleend_op, uitgeleend_tot, uitgegeven_door, teruggebracht_op, teruggebracht_door)
+                      VALUES (:id, :aan, :op, :tot, NULL, :nu, :door)')
+            ->execute([
+                ':id' => (int) $sleutelId,
+                ':aan' => (string) ($sleutel['uitgeleend_aan'] ?? ''),
+                ':op' => $sleutel['uitgeleend_op'] !== null ? (int) $sleutel['uitgeleend_op'] : null,
+                ':tot' => $sleutel['uitgeleend_tot'] !== null ? (int) $sleutel['uitgeleend_tot'] : null,
+                ':nu' => time(),
+                ':door' => sleutels_actor(),
+            ]);
+    }
+}
+
+/**
+ * Leesbare Nederlandse datum/tijd in Europe/Amsterdam, bv. '7 oktober 2026, 11:48'.
+ */
+function sleutels_format_nl($ts, $includeTime = true)
+{
+    if ($ts === null || $ts === '' || !is_numeric($ts) || (int) $ts === 0) {
+        return '';
+    }
+    if ((int) $ts === -1) {
+        return 'Onbeperkte tijd';
+    }
+    $maanden = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli',
+        'augustus', 'september', 'oktober', 'november', 'december'];
+    $dt = (new DateTimeImmutable('@' . (int) $ts))->setTimezone(new DateTimeZone('Europe/Amsterdam'));
+    $out = (int) $dt->format('j') . ' ' . $maanden[(int) $dt->format('n') - 1] . ' ' . $dt->format('Y');
+    return $includeTime ? $out . ', ' . $dt->format('H:i') : $out;
 }
 
 function sleutels_open_db($path)
