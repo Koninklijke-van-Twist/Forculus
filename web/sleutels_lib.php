@@ -32,9 +32,32 @@ function sleutels_db_filename($userName)
     return 'sleutels_' . $safe . '.sqlite';
 }
 
+function sleutels_data_dir()
+{
+    $env = getenv('FORCULUS_DATA_DIR');
+    if (is_string($env) && $env !== '') {
+        return rtrim($env, "/\\");
+    }
+
+    return __DIR__;
+}
+
 function sleutels_db_path($userName)
 {
-    return __DIR__ . DIRECTORY_SEPARATOR . sleutels_db_filename($userName);
+    return sleutels_data_dir() . DIRECTORY_SEPARATOR . sleutels_db_filename($userName);
+}
+
+function sleutels_add_column(PDO $db, $table, $column, $definition)
+{
+    $info = $db->query('PRAGMA table_info(' . $table . ')');
+    if ($info) {
+        foreach ($info as $col) {
+            if (strcasecmp((string) ($col['name'] ?? ''), $column) === 0) {
+                return;
+            }
+        }
+    }
+    $db->exec('ALTER TABLE ' . $table . ' ADD COLUMN ' . $column . ' ' . $definition);
 }
 
 function sleutels_ensure_schema(PDO $db)
@@ -48,9 +71,13 @@ function sleutels_ensure_schema(PDO $db)
             toegang         TEXT,
             uitgeleend_op   INTEGER,
             uitgeleend_tot  INTEGER,
-            uitgeleend_aan  TEXT
+            uitgeleend_aan  TEXT,
+            uitgegeven_door TEXT,
+            lijst_id        INTEGER
         )
     ");
+    sleutels_add_column($db, 'sleutels', 'uitgegeven_door', 'TEXT');
+    sleutels_add_column($db, 'sleutels', 'lijst_id', 'INTEGER');
     $db->exec("
         CREATE TABLE IF NOT EXISTS sleutel_historie (
             id                 INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,6 +91,32 @@ function sleutels_ensure_schema(PDO $db)
         )
     ");
     $db->exec('CREATE INDEX IF NOT EXISTS idx_sleutel_historie_sleutel ON sleutel_historie (sleutel_id)');
+    $db->exec('CREATE INDEX IF NOT EXISTS idx_sleutels_lijst ON sleutels (lijst_id)');
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS forculus_meta (
+            sleutel TEXT PRIMARY KEY,
+            waarde  TEXT NOT NULL
+        )
+    ");
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS lijsten (
+            id                INTEGER PRIMARY KEY AUTOINCREMENT,
+            token             TEXT NOT NULL UNIQUE,
+            naam              TEXT NOT NULL,
+            eigenaar_email    TEXT NOT NULL,
+            eigenaar_weergave TEXT NOT NULL,
+            aangemaakt_op     INTEGER NOT NULL
+        )
+    ");
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS lijst_leden (
+            lijst_id      INTEGER NOT NULL,
+            email         TEXT NOT NULL,
+            weergave      TEXT NOT NULL,
+            toegevoegd_op INTEGER NOT NULL,
+            PRIMARY KEY (lijst_id, email)
+        )
+    ");
 }
 
 /**
@@ -75,12 +128,22 @@ function sleutels_actor()
     return $email !== '' ? $email : 'onbekend';
 }
 
-function sleutels_history_log_issue(PDO $db, $sleutelId, $aan, $opTs, $totTs)
+function sleutels_history_actor($actor = null)
 {
+    if ($actor !== null && trim((string) $actor) !== '') {
+        return trim((string) $actor);
+    }
+
+    return sleutels_actor();
+}
+
+function sleutels_history_log_issue(PDO $db, $sleutelId, $aan, $opTs, $totTs, $actor = null)
+{
+    $door = sleutels_history_actor($actor);
     // Eventueel nog openstaande regel afsluiten (zou niet moeten voorkomen).
     $db->prepare('UPDATE sleutel_historie SET teruggebracht_op = :nu, teruggebracht_door = :door
                   WHERE sleutel_id = :id AND teruggebracht_op IS NULL')
-        ->execute([':nu' => time(), ':door' => sleutels_actor(), ':id' => (int) $sleutelId]);
+        ->execute([':nu' => time(), ':door' => $door, ':id' => (int) $sleutelId]);
     $db->prepare('INSERT INTO sleutel_historie (sleutel_id, uitgeleend_aan, uitgeleend_op, uitgeleend_tot, uitgegeven_door)
                   VALUES (:id, :aan, :op, :tot, :door)')
         ->execute([
@@ -88,15 +151,16 @@ function sleutels_history_log_issue(PDO $db, $sleutelId, $aan, $opTs, $totTs)
             ':aan' => (string) $aan,
             ':op' => (int) $opTs,
             ':tot' => (int) $totTs,
-            ':door' => sleutels_actor(),
+            ':door' => $door,
         ]);
 }
 
-function sleutels_history_log_return(PDO $db, $sleutelId, array $sleutel)
+function sleutels_history_log_return(PDO $db, $sleutelId, array $sleutel, $actor = null)
 {
+    $door = sleutels_history_actor($actor);
     $stmt = $db->prepare('UPDATE sleutel_historie SET teruggebracht_op = :nu, teruggebracht_door = :door
                           WHERE sleutel_id = :id AND teruggebracht_op IS NULL');
-    $stmt->execute([':nu' => time(), ':door' => sleutels_actor(), ':id' => (int) $sleutelId]);
+    $stmt->execute([':nu' => time(), ':door' => $door, ':id' => (int) $sleutelId]);
     if ($stmt->rowCount() === 0 && (!empty($sleutel['uitgeleend_op']) || !empty($sleutel['uitgeleend_tot']))) {
         // Uitlening van voor de historie bestond: alsnog vastleggen, uitgever onbekend.
         $db->prepare('INSERT INTO sleutel_historie (sleutel_id, uitgeleend_aan, uitgeleend_op, uitgeleend_tot, uitgegeven_door, teruggebracht_op, teruggebracht_door)
@@ -107,7 +171,7 @@ function sleutels_history_log_return(PDO $db, $sleutelId, array $sleutel)
                 ':op' => $sleutel['uitgeleend_op'] !== null ? (int) $sleutel['uitgeleend_op'] : null,
                 ':tot' => $sleutel['uitgeleend_tot'] !== null ? (int) $sleutel['uitgeleend_tot'] : null,
                 ':nu' => time(),
-                ':door' => sleutels_actor(),
+                ':door' => $door,
             ]);
     }
 }
@@ -300,6 +364,10 @@ function sleutels_import_error_message($code)
             return 'Het bestand bevat te veel sleutels om in één keer te importeren.';
         case 'upload':
             return 'Het uploaden is mislukt. Probeer het opnieuw.';
+        case 'id_bezet':
+            return 'Import afgebroken: een sleutel-id hoort al bij een andere lijst. Er is niets gewijzigd.';
+        case 'lijst':
+            return 'De lijst om in te importeren bestaat niet. Er is niets gewijzigd.';
         default:
             return 'Importeren is mislukt. Controleer het bestand en probeer het opnieuw.';
     }
@@ -396,15 +464,44 @@ function sleutels_import_int($value)
 /**
  * Voegt rijen uit $source samen in $target.
  * Zelfde id wordt overschreven, een nieuw id wordt toegevoegd.
+ * Met $lijstId blijven sleutels van andere lijsten onaangeroerd.
  *
  * @return array{inserted:int,updated:int}
  */
-function sleutels_merge_import(PDO $target, PDO $source)
+function sleutels_merge_import(PDO $target, PDO $source, $lijstId = null)
 {
     sleutels_assert_import_source($source);
     sleutels_ensure_schema($target);
 
-    $rows = $source->query('SELECT id, naam, tapkey_id, opslagplek, toegang, uitgeleend_op, uitgeleend_tot, uitgeleend_aan FROM sleutels')->fetchAll(PDO::FETCH_ASSOC);
+    $scope = null;
+    if ($lijstId !== null) {
+        $scope = (int) $lijstId;
+        if ($scope <= 0) {
+            throw new SleutelsImportException('lijst');
+        }
+        $lijst = $target->prepare('SELECT 1 FROM lijsten WHERE id = :id');
+        $lijst->execute([':id' => $scope]);
+        if (!$lijst->fetchColumn()) {
+            throw new SleutelsImportException('lijst');
+        }
+    }
+
+    $heeftActor = false;
+    $info = $source->query('PRAGMA table_info(sleutels)');
+    if ($info) {
+        foreach ($info as $column) {
+            if (strtolower((string) ($column['name'] ?? '')) === 'uitgegeven_door') {
+                $heeftActor = true;
+                break;
+            }
+        }
+    }
+
+    $select = 'SELECT id, naam, tapkey_id, opslagplek, toegang, uitgeleend_op, uitgeleend_tot, uitgeleend_aan';
+    if ($heeftActor) {
+        $select .= ', uitgegeven_door';
+    }
+    $rows = $source->query($select . ' FROM sleutels')->fetchAll(PDO::FETCH_ASSOC);
     if (!is_array($rows)) {
         $rows = [];
     }
@@ -413,10 +510,21 @@ function sleutels_merge_import(PDO $target, PDO $source)
     }
 
     $existing = [];
-    $have = $target->query('SELECT id FROM sleutels');
+    $foreign = [];
+    $have = $target->query('SELECT id, lijst_id FROM sleutels');
     if ($have) {
         foreach ($have as $row) {
-            $existing[(int) $row['id']] = true;
+            $id = (int) $row['id'];
+            if ($scope === null) {
+                $existing[$id] = true;
+                continue;
+            }
+            $rowLijst = $row['lijst_id'];
+            if ($rowLijst === null || $rowLijst === '' || (int) $rowLijst === $scope) {
+                $existing[$id] = true;
+            } else {
+                $foreign[$id] = true;
+            }
         }
     }
 
@@ -424,27 +532,50 @@ function sleutels_merge_import(PDO $target, PDO $source)
     $updated = 0;
     $target->beginTransaction();
     try {
-        $update = $target->prepare('
-            UPDATE sleutels
-            SET naam = :naam,
-                tapkey_id = :tapkey_id,
-                opslagplek = :opslagplek,
-                toegang = :toegang,
-                uitgeleend_op = :uitgeleend_op,
-                uitgeleend_tot = :uitgeleend_tot,
-                uitgeleend_aan = :uitgeleend_aan
-            WHERE id = :id
-        ');
-        $insert = $target->prepare('
-            INSERT INTO sleutels (id, naam, tapkey_id, opslagplek, toegang, uitgeleend_op, uitgeleend_tot, uitgeleend_aan)
-            VALUES (:id, :naam, :tapkey_id, :opslagplek, :toegang, :uitgeleend_op, :uitgeleend_tot, :uitgeleend_aan)
-        ');
+        if ($scope === null) {
+            $update = $target->prepare('
+                UPDATE sleutels
+                SET naam = :naam,
+                    tapkey_id = :tapkey_id,
+                    opslagplek = :opslagplek,
+                    toegang = :toegang,
+                    uitgeleend_op = :uitgeleend_op,
+                    uitgeleend_tot = :uitgeleend_tot,
+                    uitgeleend_aan = :uitgeleend_aan
+                WHERE id = :id
+            ');
+            $insert = $target->prepare('
+                INSERT INTO sleutels (id, naam, tapkey_id, opslagplek, toegang, uitgeleend_op, uitgeleend_tot, uitgeleend_aan)
+                VALUES (:id, :naam, :tapkey_id, :opslagplek, :toegang, :uitgeleend_op, :uitgeleend_tot, :uitgeleend_aan)
+            ');
+        } else {
+            $update = $target->prepare('
+                UPDATE sleutels
+                SET naam = :naam,
+                    tapkey_id = :tapkey_id,
+                    opslagplek = :opslagplek,
+                    toegang = :toegang,
+                    uitgeleend_op = :uitgeleend_op,
+                    uitgeleend_tot = :uitgeleend_tot,
+                    uitgeleend_aan = :uitgeleend_aan,
+                    uitgegeven_door = :uitgegeven_door,
+                    lijst_id = :lijst
+                WHERE id = :id AND (lijst_id = :lijst OR lijst_id IS NULL)
+            ');
+            $insert = $target->prepare('
+                INSERT INTO sleutels (id, naam, tapkey_id, opslagplek, toegang, uitgeleend_op, uitgeleend_tot, uitgeleend_aan, uitgegeven_door, lijst_id)
+                VALUES (:id, :naam, :tapkey_id, :opslagplek, :toegang, :uitgeleend_op, :uitgeleend_tot, :uitgeleend_aan, :uitgegeven_door, :lijst)
+            ');
+        }
 
         foreach ($rows as $row) {
             $id = sleutels_import_id($row['id'] ?? null);
             $naam = trim((string) ($row['naam'] ?? ''));
             if ($naam === '') {
                 throw new SleutelsImportException('ongeldige_rijen');
+            }
+            if (isset($foreign[$id])) {
+                throw new SleutelsImportException('id_bezet');
             }
 
             $params = [
@@ -457,6 +588,11 @@ function sleutels_merge_import(PDO $target, PDO $source)
                 ':uitgeleend_tot' => sleutels_import_int($row['uitgeleend_tot'] ?? null),
                 ':uitgeleend_aan' => sleutels_import_text($row['uitgeleend_aan'] ?? null),
             ];
+            if ($scope !== null) {
+                $actor = $heeftActor ? sleutels_import_text($row['uitgegeven_door'] ?? null) : null;
+                $params[':uitgegeven_door'] = $actor;
+                $params[':lijst'] = $scope;
+            }
 
             if (isset($existing[$id])) {
                 $update->execute($params);
@@ -482,7 +618,7 @@ function sleutels_merge_import(PDO $target, PDO $source)
     ];
 }
 
-function sleutels_import_file($targetPath, $sourcePath)
+function sleutels_import_file($targetPath, $sourcePath, $lijstId = null)
 {
     if (!is_file($sourcePath) || !sleutels_is_sqlite_file($sourcePath)) {
         throw new SleutelsImportException('geen_sqlite');
@@ -505,10 +641,10 @@ function sleutels_import_file($targetPath, $sourcePath)
 
     $target = sleutels_open_db($targetPath);
 
-    return sleutels_merge_import($target, $source);
+    return sleutels_merge_import($target, $source, $lijstId);
 }
 
-function sleutels_import_upload($targetPath, array $file)
+function sleutels_import_upload($targetPath, array $file, $lijstId = null)
 {
     $error = (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE);
     if ($error === UPLOAD_ERR_NO_FILE) {
@@ -526,7 +662,7 @@ function sleutels_import_upload($targetPath, array $file)
         throw new SleutelsImportException('geen_bestand');
     }
 
-    return sleutels_import_file($targetPath, $tmp);
+    return sleutels_import_file($targetPath, $tmp, $lijstId);
 }
 
 function sleutels_copy_consistent($sourcePath, $destPath)
@@ -557,3 +693,5 @@ function sleutels_copy_consistent($sourcePath, $destPath)
         throw new RuntimeException('Backup kopiëren mislukt.');
     }
 }
+
+require_once __DIR__ . '/lijsten_lib.php';

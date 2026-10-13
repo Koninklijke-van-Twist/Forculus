@@ -67,7 +67,7 @@
         bodyEl.appendChild(ol);
     }
 
-    function open(id, label) {
+    function open(id, lijst, label) {
         lastFocus = document.activeElement;
         var nr = ++requestNr;
         titleEl.textContent = label || 'Sleutel';
@@ -77,7 +77,8 @@
         document.body.classList.add('modal-open');
         titleEl.focus();
 
-        fetch('sleutel_info.php?id=' + encodeURIComponent(id), { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+        var url = 'sleutel_info.php?id=' + encodeURIComponent(id) + '&lijst=' + encodeURIComponent(lijst || '');
+        fetch(url, { credentials: 'same-origin', headers: { Accept: 'application/json' } })
             .then(function (r) {
                 return r.json().catch(function () { return { ok: false }; });
             })
@@ -106,7 +107,7 @@
         var trigger = event.target.closest ? event.target.closest('[data-key-info]') : null;
         if (!trigger) { return; }
         event.preventDefault();
-        open(trigger.getAttribute('data-key-info'), trigger.textContent.trim());
+        open(trigger.getAttribute('data-key-info'), trigger.getAttribute('data-lijst') || '', trigger.textContent.trim());
     });
 
     closeBtn.addEventListener('click', close);

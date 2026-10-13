@@ -1,11 +1,14 @@
 <?php
 require_once __DIR__ . '/logincheck.php';
-require_once __DIR__ . '/sleutels_lib.php';
-require_once __DIR__ . '/ui.php';
-$userName = isset($_SESSION['user']) ? nameForUser($_SESSION['user']['email']) : "DEBUG";
+require_once __DIR__ . '/context.php';
+
+$ctx = forculus_context('actie');
+forculus_stop_tenzij_lijst($ctx);
+$lijst = $ctx['lijst'];
+$user = $ctx['user'];
 
 try {
-    $db = sleutels_open_db(sleutels_db_path($userName));
+    $db = sleutels_lijst_db($lijst);
 } catch (PDOException $e) {
     die('Databasefout: ' . htmlspecialchars($e->getMessage()));
 }
@@ -24,54 +27,27 @@ if ($sleutelId <= 0) {
 
 // 3. Bij POST: gebruiker heeft het certificaat opgeslagen en bevestigt terugbrengen
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bevestig']) && $_POST['bevestig'] === '1') {
-    // Database pas nu bijwerken: uitgeleend_* op NULL
-    $huidig = $db->prepare('SELECT * FROM sleutels WHERE id = :id');
-    $huidig->execute([':id' => $sleutelId]);
-    $huidigeSleutel = $huidig->fetch(PDO::FETCH_ASSOC);
-    if ($huidigeSleutel) {
-        sleutels_history_log_return($db, $sleutelId, $huidigeSleutel);
+    try {
+        sleutels_breng_terug($db, $lijst['id'], $sleutelId, $user['email']);
+    } catch (SleutelsLijstException $e) {
+        die('Sleutel niet gevonden.');
     }
 
-    $stmt = $db->prepare("
-        UPDATE sleutels
-        SET uitgeleend_op = NULL,
-            uitgeleend_tot = NULL,
-            uitgeleend_aan = NULL
-        WHERE id = :id
-    ");
-    $stmt->execute([':id' => $sleutelId]);
-
-    // Terug naar overzicht met statusmelding
-    header('Location: index.php?status=returned');
+    forculus_redirect('index.php', $lijst['token'], ['status' => 'returned']);
     exit;
 }
 
 // 4. Bij GET of eerste bezoek: sleutelgegevens + userinfo ophalen
 
 // Sleutel ophalen
-$stmt = $db->prepare("SELECT * FROM sleutels WHERE id = :id");
-$stmt->execute([':id' => $sleutelId]);
-$sleutel = $stmt->fetch(PDO::FETCH_ASSOC);
+$sleutel = sleutels_sleutel_in_lijst($db, $lijst['id'], $sleutelId);
 
 if (!$sleutel) {
     die('Sleutel niet gevonden.');
 }
 
-// Azure users inladen
-$users = [];
-$userById = [];
-$getUsersFile = __DIR__ . '/getusers.php';
-
-if (file_exists($getUsersFile)) {
-    $users = include $getUsersFile;
-    if (is_array($users)) {
-        foreach ($users as $u) {
-            if (!empty($u['Id'])) {
-                $userById[$u['Id']] = $u;
-            }
-        }
-    }
-}
+$users = forculus_gebruikers();
+$userById = forculus_user_index($users);
 
 // Uitlener bepalen
 $uitgeleendAanId = $sleutel['uitgeleend_aan'] ?? null;
@@ -116,7 +92,7 @@ $uitgeleendTot = formatTimestampReadable($sleutel['uitgeleend_tot'] ?? null);
 <body>
     <div class="container">
         <div class="back-link no-print">
-            <a href="index.php">&larr; Terug naar overzicht</a>
+            <a href="<?= htmlspecialchars(forculus_url('index.php', $lijst['token']), ENT_QUOTES, 'UTF-8') ?>">&larr; Terug naar overzicht</a>
         </div>
 
         <h1>Sleutel terugbrengen</h1>
@@ -157,6 +133,7 @@ $uitgeleendTot = formatTimestampReadable($sleutel['uitgeleend_tot'] ?? null);
             <b>Oorspronkelijk uitgeleend tot:</b>&#9;<t><?= ucfirst(htmlspecialchars($uitgeleendTot)) ?></t>
 <?php endif; ?>
 <b>Geretourneerd op:</b>&#9;&#9;<t><?= ucfirst(htmlspecialchars($huidigTijdstip)) ?></t>
+<b>Ingenomen door:</b>&#9;&#9;<t><?= htmlspecialchars($user['weergave']) ?> (<?= htmlspecialchars($user['email']) ?>)</t>
 </pre>
                 </dl>
 
@@ -187,6 +164,7 @@ $uitgeleendTot = formatTimestampReadable($sleutel['uitgeleend_tot'] ?? null);
                 data-confirm="Weet je zeker dat je wilt bevestigen dat deze sleutel is teruggebracht?"
                 data-confirm-title="Terugbrengen bevestigen"
                 data-confirm-ok="Bevestig terugbrengen">
+                <?php forculus_lijst_veld($lijst['token']); ?>
                 <input type="hidden" name="id" value="<?= htmlspecialchars((string) $sleutelId) ?>">
                 <input type="hidden" name="bevestig" value="1">
                 <button type="submit" class="btn">

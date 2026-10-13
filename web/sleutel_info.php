@@ -3,7 +3,7 @@
  * JSON-endpoint voor de sleutel-infomodal: uitgiftehistorie en toegang van één sleutel.
  */
 require_once __DIR__ . '/logincheck.php';
-require_once __DIR__ . '/sleutels_lib.php';
+require_once __DIR__ . '/context.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
@@ -15,17 +15,17 @@ function sleutel_info_json(array $payload, $status = 200)
     exit;
 }
 
-$userName = isset($_SESSION['user']) ? nameForUser($_SESSION['user']['email']) : "DEBUG";
+$ctx = forculus_context('actie');
+forculus_stop_tenzij_lijst($ctx, true);
+$lijst = $ctx['lijst'];
 $sleutelId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 if ($sleutelId <= 0) {
     sleutel_info_json(['ok' => false, 'error' => 'Ongeldig sleutelnr.'], 400);
 }
 
 try {
-    $db = sleutels_open_db(sleutels_db_path($userName));
-    $stmt = $db->prepare('SELECT * FROM sleutels WHERE id = :id');
-    $stmt->execute([':id' => $sleutelId]);
-    $sleutel = $stmt->fetch(PDO::FETCH_ASSOC);
+    $db = sleutels_lijst_db($lijst);
+    $sleutel = sleutels_sleutel_in_lijst($db, $lijst['id'], $sleutelId);
     if (!$sleutel) {
         sleutel_info_json(['ok' => false, 'error' => 'Sleutel niet gevonden.'], 404);
     }
@@ -37,16 +37,7 @@ try {
     sleutel_info_json(['ok' => false, 'error' => 'Databasefout.'], 500);
 }
 
-$userById = [];
-$getUsersFile = __DIR__ . '/getusers.php';
-$users = file_exists($getUsersFile) ? include $getUsersFile : [];
-if (is_array($users)) {
-    foreach ($users as $u) {
-        if (!empty($u['Id'])) {
-            $userById[$u['Id']] = $u;
-        }
-    }
-}
+$userById = forculus_user_index(forculus_gebruikers());
 
 $label = function ($raw) use ($userById) {
     $raw = trim((string) $raw);
@@ -68,9 +59,9 @@ foreach ($rows as $r) {
         'aan' => $label($r['uitgeleend_aan']),
         'uitgegeven_op' => sleutels_format_nl($r['uitgeleend_op']),
         'uitgeleend_tot' => sleutels_format_nl($r['uitgeleend_tot']),
-        'uitgegeven_door' => $r['uitgegeven_door'] !== null ? (string) $r['uitgegeven_door'] : '(onbekend)',
+        'uitgegeven_door' => ($actor = sleutels_actor_label($r['uitgegeven_door'] ?? '', $userById)) !== '' ? $actor : '(onbekend)',
         'teruggebracht_op' => $open ? '' : sleutels_format_nl($r['teruggebracht_op']),
-        'teruggebracht_door' => $open ? '' : (string) $r['teruggebracht_door'],
+        'teruggebracht_door' => $open ? '' : (($terug = sleutels_actor_label($r['teruggebracht_door'] ?? '', $userById)) !== '' ? $terug : '(onbekend)'),
         'open' => $open,
     ];
 }
@@ -82,7 +73,7 @@ if ($heeftLoan && !$heeftOpen) {
         'aan' => $label($sleutel['uitgeleend_aan']),
         'uitgegeven_op' => sleutels_format_nl($sleutel['uitgeleend_op']),
         'uitgeleend_tot' => sleutels_format_nl($sleutel['uitgeleend_tot']),
-        'uitgegeven_door' => '(onbekend)',
+        'uitgegeven_door' => ($huidigActor = sleutels_actor_label($sleutel['uitgegeven_door'] ?? '', $userById)) !== '' ? $huidigActor : '(onbekend)',
         'teruggebracht_op' => '',
         'teruggebracht_door' => '',
         'open' => true,
