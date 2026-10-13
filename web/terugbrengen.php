@@ -28,7 +28,7 @@ if ($sleutelId <= 0) {
 // 3. Bij POST: gebruiker heeft het certificaat opgeslagen en bevestigt terugbrengen
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bevestig']) && $_POST['bevestig'] === '1') {
     try {
-        sleutels_breng_terug($db, $lijst['id'], $sleutelId, $user['email']);
+        sleutels_breng_terug($db, $lijst['id'], $sleutelId, forculus_echt($user));
     } catch (SleutelsLijstException $e) {
         die('Sleutel niet gevonden.');
     }
@@ -133,7 +133,7 @@ $uitgeleendTot = formatTimestampReadable($sleutel['uitgeleend_tot'] ?? null);
             <b>Oorspronkelijk uitgeleend tot:</b>&#9;<t><?= ucfirst(htmlspecialchars($uitgeleendTot)) ?></t>
 <?php endif; ?>
 <b>Geretourneerd op:</b>&#9;&#9;<t><?= ucfirst(htmlspecialchars($huidigTijdstip)) ?></t>
-<b>Ingenomen door:</b>&#9;&#9;<t><?= htmlspecialchars($user['weergave']) ?> (<?= htmlspecialchars($user['email']) ?>)</t>
+<b>Ingenomen door:</b>&#9;&#9;<t><?= htmlspecialchars($user['weergave']) ?> (<?= htmlspecialchars(forculus_echt($user)) ?>)</t>
 </pre>
                 </dl>
 

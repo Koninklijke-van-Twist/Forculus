@@ -125,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $totTs = (int) $confirmTotTs;
             $vanafTs = (int) $confirmVanafTs;
 
-            sleutels_wijs_toe($db, $lijst['id'], $sleutelId, $confirmUserId, $vanafTs, $totTs, $user['email']);
+            sleutels_wijs_toe($db, $lijst['id'], $sleutelId, $confirmUserId, $vanafTs, $totTs, forculus_echt($user));
 
             forculus_redirect('index.php', $lijst['token'], ['status' => 'lent']);
             exit;
@@ -276,7 +276,7 @@ foreach ($users as $u) {
             <b>Geeft toegang tot:</b>&#9;<t><?= $sleutel['toegang'] ?? "(Onbekend)" ?></t>
 
             <b>Uitgegeven aan:</b>&#9;&#9;<t><?= htmlspecialchars($uitlenerNaam) ?> (<?= htmlspecialchars($uitlenerEmail) ?>)</t>
-            <b>Uitgegeven door:</b>&#9;<t><?= htmlspecialchars($user['weergave']) ?> (<?= htmlspecialchars($user['email']) ?>)</t>
+            <b>Uitgegeven door:</b>&#9;<t><?= htmlspecialchars($user['weergave']) ?> (<?= htmlspecialchars(forculus_echt($user)) ?>)</t>
             <b>Uitgegeven op:</b>&#9;&#9;<t><?= htmlspecialchars($uitgeleendVanafFormatted) ?></t>
             <b>Uitgeleend tot:</b>&#9;&#9;<t><?= htmlspecialchars($uitgeleendTotFormatted) ?></t>
             </pre>
