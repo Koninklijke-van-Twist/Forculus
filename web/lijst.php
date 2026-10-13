@@ -2,17 +2,19 @@
 require_once __DIR__ . '/logincheck.php';
 require_once __DIR__ . '/context.php';
 
-function lijst_fout_redirect($token, SleutelsLijstException $e, $delen = false)
-{
-    $query = [
-        'status' => 'lijst_fout',
-        'code' => $e->errorCode(),
-    ];
-    if ($delen) {
-        $query['delen'] = '1';
+if (!function_exists('lijst_fout_redirect')) {
+    function lijst_fout_redirect($token, SleutelsLijstException $e, $delen = false)
+    {
+        $query = [
+            'status' => 'lijst_fout',
+            'code' => $e->errorCode(),
+        ];
+        if ($delen) {
+            $query['delen'] = '1';
+        }
+        $pad = ($token === null || $token === '') ? 'index.php' : 'lijst.php';
+        forculus_redirect($pad, $token, $query);
     }
-    $pad = ($token === null || $token === '') ? 'index.php' : 'lijst.php';
-    forculus_redirect($pad, $token, $query);
 }
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
@@ -144,6 +146,31 @@ $isOwner = !empty($lijst['is_eigenaar']);
         <div class="form-actions">
             <button type="button" class="btn" data-share-open>Delen</button>
         </div>
+
+        <section class="backup-panel no-print">
+            <div class="backup-copy">
+                <h2>Backup en import</h2>
+                <p>
+                    Download de database van deze lijst, of importeer een sqlite-bestand in deze lijst.
+                    Een sleutel met hetzelfde id wordt overschreven; een nieuw id wordt toegevoegd.
+                    Andere lijsten blijven onaangeroerd.
+                </p>
+            </div>
+            <div class="backup-actions">
+                <a href="<?= htmlspecialchars(forculus_url('backup.php', $lijst['token']), ENT_QUOTES, 'UTF-8') ?>" class="btn btn-secondary">Databasebackup downloaden</a>
+                <form method="post" action="import.php" enctype="multipart/form-data" class="import-form"
+                    data-confirm="Dit importeert sleutels in deze lijst. Bestaande sleutels met hetzelfde id worden overschreven en nieuwe sleutels worden toegevoegd. Andere lijsten blijven onaangeroerd."
+                    data-confirm-title="Database importeren"
+                    data-confirm-ok="Importeren">
+                    <?php forculus_lijst_veld($lijst['token']); ?>
+                    <label class="file-picker">
+                        SQLite-bestand
+                        <input type="file" name="sqlite" accept=".sqlite,.db,application/vnd.sqlite3,application/x-sqlite3" required>
+                    </label>
+                    <button type="submit" class="btn">Importeren</button>
+                </form>
+            </div>
+        </section>
     </div>
     <?php forculus_deel_modal($lijst, $users); ?>
     <?php forculus_modal(); ?>

@@ -17,18 +17,18 @@ try {
         isset($_FILES['sqlite']) && is_array($_FILES['sqlite']) ? $_FILES['sqlite'] : [],
         $lijst['id']
     );
-    forculus_redirect('index.php', $lijst['token'], [
+    forculus_redirect('lijst.php', $lijst['token'], [
         'status' => 'imported',
         'inserted' => (int) $result['inserted'],
         'updated' => (int) $result['updated'],
     ]);
 } catch (SleutelsImportException $e) {
-    forculus_redirect('index.php', $lijst['token'], [
+    forculus_redirect('lijst.php', $lijst['token'], [
         'status' => 'import_error',
         'code' => $e->errorCode(),
     ]);
 } catch (Throwable $e) {
-    forculus_redirect('index.php', $lijst['token'], [
+    forculus_redirect('lijst.php', $lijst['token'], [
         'status' => 'import_error',
         'code' => 'opslaan',
     ]);

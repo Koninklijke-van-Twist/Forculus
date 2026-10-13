@@ -8,7 +8,7 @@ $lijst = $ctx['lijst'];
 $path = $lijst['db_pad'];
 
 if (!is_file($path)) {
-    forculus_redirect('index.php', $lijst['token'], ['status' => 'backup_missing']);
+    forculus_redirect('lijst.php', $lijst['token'], ['status' => 'backup_missing']);
 }
 
 $veiligeNaam = preg_replace('/[^A-Za-z0-9_-]+/', '_', (string) $lijst['naam']);
