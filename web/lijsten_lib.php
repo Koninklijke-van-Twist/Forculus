@@ -168,6 +168,7 @@ function sleutels_migrate_user_db(PDO $db, $email, $weergave)
 
     if (sleutels_meta_get($db, 'lijsten_migratie') === '1') {
         sleutels_koppel_wees_sleutels($db, $email, $weergave);
+        sleutels_herstel_bestandseigenaar($db, $email, $weergave);
         return;
     }
 
@@ -175,6 +176,7 @@ function sleutels_migrate_user_db(PDO $db, $email, $weergave)
     $db->exec('BEGIN IMMEDIATE');
     try {
         if (sleutels_meta_get($db, 'lijsten_migratie') === '1') {
+            sleutels_herstel_bestandseigenaar($db, $email, $weergave);
             $db->exec('COMMIT');
             return;
         }
@@ -198,6 +200,7 @@ function sleutels_migrate_user_db(PDO $db, $email, $weergave)
                 ->execute([':id' => $id]);
         }
         sleutels_meta_set($db, 'lijsten_migratie', '1');
+        sleutels_herstel_bestandseigenaar($db, $email, $weergave);
         $db->exec('COMMIT');
     } catch (Throwable $e) {
         try {
@@ -210,6 +213,28 @@ function sleutels_migrate_user_db(PDO $db, $email, $weergave)
         }
         throw $e;
     }
+}
+
+/**
+ * Lijst in dit persoonlijke bestand waarvan de weergavenaam het effectieve
+ * account is, maar het e-mailadres nog het echte loginaccount. Geen sleutels wissen.
+ */
+function sleutels_herstel_bestandseigenaar(PDO $db, $email, $weergave)
+{
+    $email = sleutels_normalize_email($email);
+    $weergave = trim((string) $weergave);
+    if (!sleutels_geldig_email($email) || $weergave === '') {
+        return;
+    }
+    $db->prepare('UPDATE lijsten
+                  SET eigenaar_email = :nieuw
+                  WHERE eigenaar_weergave = :weergave
+                    AND eigenaar_email != :huidig')
+        ->execute([
+            ':nieuw' => $email,
+            ':weergave' => $weergave,
+            ':huidig' => $email,
+        ]);
 }
 
 function sleutels_koppel_wees_sleutels(PDO $db, $email, $weergave)
@@ -291,9 +316,9 @@ function sleutels_open_readonly($path)
 {
     $db = new PDO('sqlite:' . $path, null, null, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::SQLITE_ATTR_OPEN_FLAGS => PDO::SQLITE_OPEN_READONLY,
     ]);
     $db->exec('PRAGMA busy_timeout = 5000');
-    $db->exec('PRAGMA query_only = ON');
 
     return $db;
 }

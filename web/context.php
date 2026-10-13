@@ -9,14 +9,18 @@ function forculus_user()
         session_start();
     }
     $emailRaw = isset($_SESSION['user']['email']) ? (string) $_SESSION['user']['email'] : '';
-    $email = sleutels_normalize_email($emailRaw);
-    if (!sleutels_geldig_email($email)) {
+    $echt = sleutels_normalize_email($emailRaw);
+    if (!sleutels_geldig_email($echt)) {
         return [
             'email' => 'debug@kvt.nl',
             'weergave' => 'DEBUG',
+            'echt' => 'debug@kvt.nl',
         ];
     }
-    $weergave = $email;
+
+    // Zelfde sleutel als vóór de lijsten: nameForUser(echte sessie).
+    // Die kiest het sqlite-bestand én het account dat eigenaar van de lijst is.
+    $stam = $echt;
     if (function_exists('nameForUser')) {
         try {
             $naam = nameForUser($emailRaw);
@@ -24,14 +28,28 @@ function forculus_user()
             $naam = '';
         }
         if (is_string($naam) && trim($naam) !== '') {
-            $weergave = trim($naam);
+            $stam = trim($naam);
         }
+    }
+    $effectief = sleutels_normalize_email($stam);
+    if (!sleutels_geldig_email($effectief)) {
+        $effectief = $echt;
     }
 
     return [
-        'email' => $email,
-        'weergave' => $weergave,
+        'email' => $effectief,
+        'weergave' => $stam,
+        'echt' => $echt,
     ];
+}
+
+function forculus_echt(array $user)
+{
+    if (isset($user['echt']) && is_string($user['echt']) && trim($user['echt']) !== '') {
+        return trim($user['echt']);
+    }
+
+    return (string) ($user['email'] ?? '');
 }
 
 function forculus_url($path, $token = null, array $query = [])
