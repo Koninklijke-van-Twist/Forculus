@@ -559,8 +559,8 @@ function sleutels_merge_import(PDO $target, PDO $source, $lijstId = null)
                     uitgeleend_tot = :uitgeleend_tot,
                     uitgeleend_aan = :uitgeleend_aan,
                     uitgegeven_door = :uitgegeven_door,
-                    lijst_id = :lijst
-                WHERE id = :id AND (lijst_id = :lijst OR lijst_id IS NULL)
+                    lijst_id = :lijst_set
+                WHERE id = :id AND (lijst_id = :lijst_where OR lijst_id IS NULL)
             ');
             $insert = $target->prepare('
                 INSERT INTO sleutels (id, naam, tapkey_id, opslagplek, toegang, uitgeleend_op, uitgeleend_tot, uitgeleend_aan, uitgegeven_door, lijst_id)
@@ -591,7 +591,12 @@ function sleutels_merge_import(PDO $target, PDO $source, $lijstId = null)
             if ($scope !== null) {
                 $actor = $heeftActor ? sleutels_import_text($row['uitgegeven_door'] ?? null) : null;
                 $params[':uitgegeven_door'] = $actor;
-                $params[':lijst'] = $scope;
+                if (isset($existing[$id])) {
+                    $params[':lijst_set'] = $scope;
+                    $params[':lijst_where'] = $scope;
+                } else {
+                    $params[':lijst'] = $scope;
+                }
             }
 
             if (isset($existing[$id])) {

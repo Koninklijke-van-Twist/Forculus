@@ -198,6 +198,32 @@ $import = sleutels_merge_import(sleutels_lijst_db($lijstenA[0]), $bronDb, $lijst
 check($import['inserted'] === 1, 'import in een lijst voegt een sleutel toe');
 $geimporteerd = sleutels_sleutel_in_lijst(sleutels_lijst_db($lijstenA[0]), $lijstenA[0]['id'], 8);
 check($geimporteerd && $geimporteerd['uitgegeven_door'] === 'a@kvt.nl', 'import bewaart de toewijzer als die in het bestand staat');
+
+$bronDb->exec("UPDATE sleutels
+               SET naam = 'Kluis hersteld', tapkey_id = 'TP-8b', opslagplek = 'kluis', toegang = 'Archief',
+                   uitgeleend_op = 1700002000, uitgeleend_tot = -1, uitgeleend_aan = 'collega-2', uitgegeven_door = 'b@kvt.nl'
+               WHERE id = 8");
+$doel = sleutels_lijst_db($lijstenA[0]);
+$doel->exec("INSERT INTO sleutels (id, naam, lijst_id) VALUES (11, 'Wees', NULL)");
+$bronDb->exec("INSERT INTO sleutels (id, naam, tapkey_id, opslagplek, toegang, uitgeleend_op, uitgeleend_tot, uitgeleend_aan, uitgegeven_door)
+               VALUES (11, 'Wees gekoppeld', 'TP-11', 'lade', 'Berging', NULL, NULL, NULL, 'c@kvt.nl')");
+$overschrijf = sleutels_merge_import($doel, $bronDb, $lijstenA[0]['id']);
+check($overschrijf['updated'] === 2 && $overschrijf['inserted'] === 0, 'import overschrijft sleutels in dezelfde lijst');
+$herstel = sleutels_sleutel_in_lijst($doel, $lijstenA[0]['id'], 8);
+check(
+    $herstel
+    && $herstel['naam'] === 'Kluis hersteld'
+    && $herstel['opslagplek'] === 'kluis'
+    && $herstel['uitgeleend_aan'] === 'collega-2'
+    && (int) $herstel['uitgeleend_tot'] === -1
+    && $herstel['uitgegeven_door'] === 'b@kvt.nl'
+    && (int) $herstel['lijst_id'] === (int) $lijstenA[0]['id'],
+    'overschreven sleutel neemt de nieuwe velden over en blijft in de lijst'
+);
+$wees = sleutels_sleutel_in_lijst($doel, $lijstenA[0]['id'], 11);
+check($wees && $wees['naam'] === 'Wees gekoppeld' && $wees['uitgegeven_door'] === 'c@kvt.nl', 'sleutel zonder lijst wordt bij import aan deze lijst gekoppeld');
+$voordeur = sleutels_sleutel_in_lijst($doel, $lijstenA[0]['id'], 4);
+check($voordeur && $voordeur['naam'] === 'Voordeur' && $voordeur['opslagplek'] === 'kast', 'andere sleutel in dezelfde lijst blijft staan');
 $magazijnVoor = sleutels_sleutel_in_lijst($dbMag, $opnieuw['id'], $sleutelId);
 $botsing = $dir . '/import-botsing.sqlite';
 $botsingDb = sleutels_open_db($botsing);
@@ -212,7 +238,12 @@ $exportPad = $dir . '/export.sqlite';
 sleutels_exporteer_lijst($lijstenA[0], $exportPad);
 $export = new PDO('sqlite:' . $exportPad);
 $exportNamen = $export->query('SELECT naam FROM sleutels ORDER BY naam')->fetchAll(PDO::FETCH_COLUMN);
-check(in_array('Voordeur', $exportNamen, true) && in_array('Nieuwe kluis', $exportNamen, true), 'backup bevat de sleutels van deze lijst');
+check(
+    in_array('Voordeur', $exportNamen, true)
+    && in_array('Kluis hersteld', $exportNamen, true)
+    && in_array('Wees gekoppeld', $exportNamen, true),
+    'backup bevat de sleutels van deze lijst'
+);
 check(!in_array('Heftruck', $exportNamen, true), 'backup bevat geen sleutels uit een andere lijst');
 
 $deelnemer = sleutels_resolve_deelnemer('Ariadne Twist (ariadne@kvt.nl)', [
