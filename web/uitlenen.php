@@ -1,12 +1,14 @@
 <?php
 require_once __DIR__ . '/logincheck.php';
-require_once __DIR__ . '/sleutels_lib.php';
-require_once __DIR__ . '/ui.php';
+require_once __DIR__ . '/context.php';
 
-$userName = isset($_SESSION['user']) ? nameForUser($_SESSION['user']['email']) : "DEBUG";
+$ctx = forculus_context('actie');
+forculus_stop_tenzij_lijst($ctx);
+$lijst = $ctx['lijst'];
+$user = $ctx['user'];
 
 try {
-    $db = sleutels_open_db(sleutels_db_path($userName));
+    $db = sleutels_lijst_db($lijst);
 } catch (PDOException $e) {
     die('Databasefout: ' . htmlspecialchars($e->getMessage()));
 }
@@ -22,28 +24,14 @@ if ($sleutelId <= 0) {
     die('Ongeldig sleutelnr.');
 }
 
-$stmt = $db->prepare("SELECT * FROM sleutels WHERE id = :id");
-$stmt->execute([':id' => $sleutelId]);
-$sleutel = $stmt->fetch(PDO::FETCH_ASSOC);
+$sleutel = sleutels_sleutel_in_lijst($db, $lijst['id'], $sleutelId);
 
 if (!$sleutel) {
     die('Sleutel niet gevonden.');
 }
 
-$users = [];
-$userById = [];
-$getUsersFile = __DIR__ . '/getusers.php';
-
-if (file_exists($getUsersFile)) {
-    $users = include $getUsersFile;
-    if (is_array($users)) {
-        foreach ($users as $u) {
-            if (!empty($u['Id'])) {
-                $userById[$u['Id']] = $u;
-            }
-        }
-    }
-}
+$users = forculus_gebruikers();
+$userById = forculus_user_index($users);
 
 if (empty($users)) {
     die('Er zijn geen gebruikers gevonden in de cache. Zorg dat getusers.php werkt en gebruikers teruggeeft.');
@@ -137,22 +125,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $totTs = (int) $confirmTotTs;
             $vanafTs = (int) $confirmVanafTs;
 
-            $stmt = $db->prepare("
-                UPDATE sleutels
-                SET uitgeleend_op = :op,
-                    uitgeleend_tot = :tot,
-                    uitgeleend_aan = :aan
-                WHERE id = :id
-            ");
-            $stmt->execute([
-                ':op' => $vanafTs,
-                ':tot' => $totTs,
-                ':aan' => $confirmUserId,
-                ':id' => $sleutelId,
-            ]);
-            sleutels_history_log_issue($db, $sleutelId, $confirmUserId, $vanafTs, $totTs);
+            sleutels_wijs_toe($db, $lijst['id'], $sleutelId, $confirmUserId, $vanafTs, $totTs, $user['email']);
 
-            header('Location: index.php?status=lent');
+            forculus_redirect('index.php', $lijst['token'], ['status' => 'lent']);
             exit;
         } else {
             $mode = 'form';
@@ -187,7 +162,7 @@ foreach ($users as $u) {
 <body>
     <div class="container">
         <div class="back-link no-print">
-            <a href="index.php">&larr; Terug naar overzicht</a>
+            <a href="<?= htmlspecialchars(forculus_url('index.php', $lijst['token']), ENT_QUOTES, 'UTF-8') ?>">&larr; Terug naar overzicht</a>
         </div>
 
         <h1>Sleutel uitlenen – <?= htmlspecialchars($sleutel['naam']) ?></h1>
@@ -210,6 +185,7 @@ foreach ($users as $u) {
             </div>
 
             <form method="post" action="">
+                <?php forculus_lijst_veld($lijst['token']); ?>
                 <input type="hidden" name="id" value="<?= htmlspecialchars((string) $sleutelId) ?>">
                 <input type="hidden" name="step" value="generate">
 
@@ -300,6 +276,7 @@ foreach ($users as $u) {
             <b>Geeft toegang tot:</b>&#9;<t><?= $sleutel['toegang'] ?? "(Onbekend)" ?></t>
 
             <b>Uitgegeven aan:</b>&#9;&#9;<t><?= htmlspecialchars($uitlenerNaam) ?> (<?= htmlspecialchars($uitlenerEmail) ?>)</t>
+            <b>Uitgegeven door:</b>&#9;<t><?= htmlspecialchars($user['weergave']) ?> (<?= htmlspecialchars($user['email']) ?>)</t>
             <b>Uitgegeven op:</b>&#9;&#9;<t><?= htmlspecialchars($uitgeleendVanafFormatted) ?></t>
             <b>Uitgeleend tot:</b>&#9;&#9;<t><?= htmlspecialchars($uitgeleendTotFormatted) ?></t>
             </pre>
@@ -334,6 +311,7 @@ foreach ($users as $u) {
                     data-confirm="Weet je zeker dat je deze uitgifte wilt bevestigen?"
                     data-confirm-title="Uitgifte bevestigen"
                     data-confirm-ok="Bevestig uitgifte">
+                    <?php forculus_lijst_veld($lijst['token']); ?>
                     <input type="hidden" name="step" value="confirm">
                     <input type="hidden" name="id" value="<?= htmlspecialchars((string) $sleutelId) ?>">
                     <input type="hidden" name="user_id" value="<?= htmlspecialchars((string) $selectedUserId) ?>">

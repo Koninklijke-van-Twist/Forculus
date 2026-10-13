@@ -1,28 +1,35 @@
 <?php
 require_once __DIR__ . '/logincheck.php';
-require_once __DIR__ . '/sleutels_lib.php';
+require_once __DIR__ . '/context.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
     header('Location: index.php');
     exit;
 }
 
-$userName = isset($_SESSION['user']) ? nameForUser($_SESSION['user']['email']) : 'DEBUG';
-$targetPath = sleutels_db_path($userName);
+$ctx = forculus_context('actie');
+forculus_stop_tenzij_lijst($ctx);
+$lijst = $ctx['lijst'];
 
 try {
-    $result = sleutels_import_upload($targetPath, isset($_FILES['sqlite']) && is_array($_FILES['sqlite']) ? $_FILES['sqlite'] : []);
-    header(
-        'Location: index.php?status=imported&inserted='
-        . (int) $result['inserted']
-        . '&updated='
-        . (int) $result['updated']
+    $result = sleutels_import_upload(
+        $lijst['db_pad'],
+        isset($_FILES['sqlite']) && is_array($_FILES['sqlite']) ? $_FILES['sqlite'] : [],
+        $lijst['id']
     );
-    exit;
+    forculus_redirect('index.php', $lijst['token'], [
+        'status' => 'imported',
+        'inserted' => (int) $result['inserted'],
+        'updated' => (int) $result['updated'],
+    ]);
 } catch (SleutelsImportException $e) {
-    header('Location: index.php?status=import_error&code=' . rawurlencode($e->errorCode()));
-    exit;
+    forculus_redirect('index.php', $lijst['token'], [
+        'status' => 'import_error',
+        'code' => $e->errorCode(),
+    ]);
 } catch (Throwable $e) {
-    header('Location: index.php?status=import_error&code=opslaan');
-    exit;
+    forculus_redirect('index.php', $lijst['token'], [
+        'status' => 'import_error',
+        'code' => 'opslaan',
+    ]);
 }

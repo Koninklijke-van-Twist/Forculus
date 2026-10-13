@@ -3,56 +3,32 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 
 require_once __DIR__ . '/logincheck.php';
-require_once __DIR__ . '/sleutels_lib.php';
-require_once __DIR__ . '/ui.php';
-
-$userName = isset($_SESSION['user']) ? nameForUser($_SESSION['user']['email']) : "DEBUG";
+require_once __DIR__ . '/context.php';
 
 error_reporting(E_ALL);
 
-$dbPath = sleutels_db_path($userName);
-$db = sleutels_open_db($dbPath);
-
-$stmt = $db->query("SELECT * FROM sleutels ORDER BY naam ASC");
-$sleutels = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-$users = [];
-$userById = [];
-$getUsersFile = __DIR__ . '/getusers.php';
-
-if (file_exists($getUsersFile)) {
-    $users = include $getUsersFile;
-    if (is_array($users)) {
-        foreach ($users as $u) {
-            if (!empty($u['Id'])) {
-                $userById[$u['Id']] = $u;
-            }
-        }
-    }
+$ctx = forculus_context('pagina');
+$user = $ctx['user'];
+$userName = $user['weergave'];
+$lijsten = $ctx['lijsten'];
+$lijst = $ctx['lijst'];
+$sleutels = [];
+if ($lijst) {
+    $db = sleutels_lijst_db($lijst);
+    $stmt = $db->prepare('SELECT * FROM sleutels WHERE lijst_id = :lijst ORDER BY naam ASC');
+    $stmt->execute([':lijst' => $lijst['id']]);
+    $sleutels = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-$statusMessage = null;
-$statusClass = 'status';
-if (isset($_GET['status'])) {
-    if ($_GET['status'] === 'returned') {
-        $statusMessage = 'Sleutel is gemarkeerd als teruggebracht.';
-    } elseif ($_GET['status'] === 'lent') {
-        $statusMessage = 'Sleutel is succesvol uitgeleend.';
-    } elseif ($_GET['status'] === 'created') {
-        $statusMessage = 'Sleutel is succesvol aangemaakt.';
-    } elseif ($_GET['status'] === 'deleted') {
-        $statusMessage = 'Sleutel is verwijderd.';
-    } elseif ($_GET['status'] === 'updated') {
-        $statusMessage = 'Sleutel is bijgewerkt.';
-    } elseif ($_GET['status'] === 'imported') {
-        $statusMessage = sleutels_import_success_message($_GET['inserted'] ?? 0, $_GET['updated'] ?? 0);
-    } elseif ($_GET['status'] === 'import_error') {
-        $statusClass = 'status status-error';
-        $statusMessage = sleutels_import_error_message($_GET['code'] ?? '');
-    } elseif ($_GET['status'] === 'backup_missing') {
-        $statusClass = 'status status-error';
-        $statusMessage = 'Er is nog geen database om te downloaden.';
-    }
+$users = forculus_gebruikers();
+$userById = forculus_user_index($users);
+
+$status = forculus_status($_GET);
+if (!$status && ($ctx['fout'] ?? null) === 'geen_toegang') {
+    $status = [
+        'class' => 'status status-error',
+        'message' => sleutels_lijst_error_message('geen_toegang'),
+    ];
 }
 
 ?>
@@ -62,7 +38,7 @@ if (isset($_GET['status'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Sleutelbeheer – <?= htmlspecialchars($userName) ?></title>
+    <title>Sleutelbeheer – <?= htmlspecialchars($lijst['naam'] ?? $userName) ?></title>
     <?php forculus_assets(); ?>
 </head>
 
@@ -70,6 +46,25 @@ if (isset($_GET['status'])) {
     <div class="container container-wide">
         <h1>Sleutelbeheer – <?= htmlspecialchars($userName) ?></h1>
 
+        <section class="list-panel no-print">
+            <div class="list-panel-head">
+                <h2>Lijsten</h2>
+                <form method="post" action="lijst.php" class="new-list-form">
+                    <input type="hidden" name="actie" value="aanmaken">
+                    <label>
+                        Nieuwe lijst
+                        <input type="text" name="naam" maxlength="80" required placeholder="Bijvoorbeeld magazijn">
+                    </label>
+                    <button type="submit" class="btn btn-secondary">Aanmaken</button>
+                </form>
+            </div>
+            <?php forculus_lijst_kiezer($lijsten, $lijst['token'] ?? ''); ?>
+            <?php if ($lijst): ?>
+                <?php forculus_gedeeld_badge($lijst); ?>
+            <?php endif; ?>
+        </section>
+
+        <?php if ($lijst): ?>
         <div class="toolbar no-print">
             <div class="toolbar-left">
                 <?php if (!empty($sleutels)): ?>
@@ -77,7 +72,8 @@ if (isset($_GET['status'])) {
                 <?php endif ?>
             </div>
             <div class="toolbar-actions">
-                <a href="nieuwe_sleutel.php" class="btn">Nieuwe sleutel aanmaken</a>
+                <a href="<?= htmlspecialchars(forculus_url('nieuwe_sleutel.php', $lijst['token']), ENT_QUOTES, 'UTF-8') ?>" class="btn">Nieuwe sleutel aanmaken</a>
+                <a href="<?= htmlspecialchars(forculus_url('lijst.php', $lijst['token']), ENT_QUOTES, 'UTF-8') ?>" class="btn btn-secondary">Lijstinstellingen</a>
             </div>
         </div>
 
@@ -85,17 +81,18 @@ if (isset($_GET['status'])) {
             <div class="backup-copy">
                 <h2>Backup en import</h2>
                 <p>
-                    Download de database van jouw sleutels, of importeer een sqlite-bestand in jouw lijst.
+                    Download de database van deze lijst, of importeer een sqlite-bestand in deze lijst.
                     Een sleutel met hetzelfde id wordt overschreven; een nieuw id wordt toegevoegd.
-                    Andere gebruikers blijven onaangeroerd.
+                    Andere lijsten blijven onaangeroerd.
                 </p>
             </div>
             <div class="backup-actions">
-                <a href="backup.php" class="btn btn-secondary">Databasebackup downloaden</a>
+                <a href="<?= htmlspecialchars(forculus_url('backup.php', $lijst['token']), ENT_QUOTES, 'UTF-8') ?>" class="btn btn-secondary">Databasebackup downloaden</a>
                 <form method="post" action="import.php" enctype="multipart/form-data" class="import-form"
-                    data-confirm="Dit importeert sleutels in jouw database. Bestaande sleutels met hetzelfde id worden overschreven en nieuwe sleutels worden toegevoegd. Databases van andere gebruikers blijven onaangeroerd."
+                    data-confirm="Dit importeert sleutels in deze lijst. Bestaande sleutels met hetzelfde id worden overschreven en nieuwe sleutels worden toegevoegd. Andere lijsten blijven onaangeroerd."
                     data-confirm-title="Database importeren"
                     data-confirm-ok="Importeren">
+                    <?php forculus_lijst_veld($lijst['token']); ?>
                     <label class="file-picker">
                         SQLite-bestand
                         <input type="file" name="sqlite" accept=".sqlite,.db,application/vnd.sqlite3,application/x-sqlite3" required>
@@ -104,14 +101,17 @@ if (isset($_GET['status'])) {
                 </form>
             </div>
         </section>
+        <?php endif; ?>
 
         <div class="messages" aria-live="polite">
-            <?php if ($statusMessage): ?>
-                <div class="<?= htmlspecialchars($statusClass) ?>"><?= htmlspecialchars($statusMessage) ?></div>
+            <?php if ($status): ?>
+                <div class="<?= htmlspecialchars($status['class']) ?>"><?= htmlspecialchars($status['message']) ?></div>
             <?php endif; ?>
         </div>
-        <?php if (empty($sleutels)): ?>
-            <p class="empty">Er zijn nog geen sleutels geregistreerd.</p>
+        <?php if (!$lijst): ?>
+            <p class="empty">Maak een lijst om sleutels te beheren.</p>
+        <?php elseif (empty($sleutels)): ?>
+            <p class="empty">Er zijn nog geen sleutels in deze lijst.</p>
         <?php else: ?>
             <div class="table-wrap">
             <table id="sleutelTable">
@@ -150,6 +150,7 @@ if (isset($_GET['status'])) {
                         $borrower = sleutels_borrower_view($uitgeleendAanId, $userById, $heeftLoanTimestamps, $uitgeleendTot);
                         $uitgeleendAanText = $borrower['text'];
                         $uitgeleendAanClass = $borrower['class'];
+                        $actorLabel = sleutels_actor_label($s['uitgegeven_door'] ?? '', $userById);
                         $isOverdue = $heeftLoanTimestamps && sleutels_is_overdue($uitgeleendTot);
 
                         $terugbrengenDisabled = !$heeftLoanTimestamps;
@@ -160,6 +161,7 @@ if (isset($_GET['status'])) {
                             <td <?php if ($hasExtra): ?>class="above" <?php endif; ?>
                                 data-sort="<?= htmlspecialchars($naam) . htmlspecialchars($s['tapkey_id'] ?? "") ?: 0 ?>">
                                 <button type="button" class="key-link" data-key-info="<?= $id ?>"
+                                    data-lijst="<?= htmlspecialchars($lijst['token'], ENT_QUOTES, 'UTF-8') ?>"
                                     aria-haspopup="dialog"><?= htmlspecialchars($naam) ?></button>
                                 <?php if ($s['tapkey_id'] <> null): ?>
                                     <div class="below"> <?= "ID: " . htmlspecialchars((string) $s['tapkey_id']) ?></div>
@@ -174,10 +176,14 @@ if (isset($_GET['status'])) {
                                     <div class="below"> <?= $s['toegang'] <> null ? "Toegang tot: " . htmlspecialchars((string) $s['toegang']) : " " ?></div>
                                 <?php endif; ?>
                             </td>
-                            <td <?php if ($hasExtra): ?>class="above" <?php endif; ?>>
+                            <td <?php if ($hasExtra): ?>class="above" <?php endif; ?>
+                                data-sort="<?= htmlspecialchars($uitgeleendAanText) ?>">
                                 <span class="<?= htmlspecialchars($uitgeleendAanClass) ?>">
                                     <?= htmlspecialchars($uitgeleendAanText) ?>
                                 </span>
+                                <?php if ($heeftLoanTimestamps && $actorLabel !== ''): ?>
+                                    <span class="actor-line">Toegewezen door <?= htmlspecialchars($actorLabel) ?></span>
+                                <?php endif; ?>
                             </td>
                             <td <?php if ($hasExtra): ?>class="above" <?php endif; ?>
                                 data-sort="<?= htmlspecialchars((string) ($uitgeleendOp ?: 0)) ?>">
@@ -191,16 +197,16 @@ if (isset($_GET['status'])) {
                                 <?php if ($terugbrengenDisabled): ?>
                                     <span class="btn-small btn-secondary is-disabled">Terugbrengen</span>
                                 <?php else: ?>
-                                    <a href="terugbrengen.php?id=<?= $id ?>" class="btn-small">Terugbrengen</a>
+                                    <a href="<?= htmlspecialchars(forculus_url('terugbrengen.php', $lijst['token'], ['id' => $id]), ENT_QUOTES, 'UTF-8') ?>" class="btn-small">Terugbrengen</a>
                                 <?php endif; ?>
 
                                 <?php if ($uitlenenDisabled): ?>
                                     <span class="btn-small btn-secondary is-disabled">Uitlenen</span>
                                 <?php else: ?>
-                                    <a href="uitlenen.php?id=<?= $id ?>" class="btn-small">Uitlenen</a>
+                                    <a href="<?= htmlspecialchars(forculus_url('uitlenen.php', $lijst['token'], ['id' => $id]), ENT_QUOTES, 'UTF-8') ?>" class="btn-small">Uitlenen</a>
                                 <?php endif; ?>
-                                <a href="bewerken.php?id=<?= $id ?>" class="btn-small">✏️</a>
-                                <a href="verwijderen.php?id=<?= $id ?>" class="btn-small">🗑️</a>
+                                <a href="<?= htmlspecialchars(forculus_url('bewerken.php', $lijst['token'], ['id' => $id]), ENT_QUOTES, 'UTF-8') ?>" class="btn-small">✏️</a>
+                                <a href="<?= htmlspecialchars(forculus_url('verwijderen.php', $lijst['token'], ['id' => $id]), ENT_QUOTES, 'UTF-8') ?>" class="btn-small">🗑️</a>
                             </td>
                         </tr>
                     <?php endforeach; ?>
