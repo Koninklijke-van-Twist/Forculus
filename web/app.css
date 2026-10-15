@@ -119,6 +119,27 @@ h2 {
     margin-bottom: 16px;
 }
 
+.container-narrow .backup-panel {
+    flex-direction: column;
+    align-items: stretch;
+    margin-top: 28px;
+    margin-bottom: 0;
+}
+
+.container-narrow .backup-copy {
+    max-width: none;
+}
+
+.container-narrow .backup-actions {
+    justify-content: flex-start;
+}
+
+.container-narrow .file-picker,
+.container-narrow .file-picker input[type="file"] {
+    min-width: 0;
+    max-width: 100%;
+}
+
 .backup-panel h2 {
     margin: 0 0 4px;
     text-align: left;

@@ -316,6 +316,7 @@ check(strpos($htmlA, 'Magazijn van A') !== false, 'overzicht toont de gedeelde l
 check(strpos($htmlA, 'gedeeld door B') !== false, 'gedeelde lijst heeft een badge met de eigenaar');
 check(strpos($htmlA, 'Toegewezen door a@kvt.nl') !== false, 'overzicht toont wie de sleutel toewees');
 check(strpos($htmlA, 'Nieuwe lijst') !== false && strpos($htmlA, 'Lijstinstellingen') !== false, 'overzicht biedt een nieuwe lijst en lijstinstellingen');
+check(strpos($htmlA, 'Backup en import') === false && strpos($htmlA, 'action="import.php"') === false, 'overzicht toont geen backup- en importblok');
 
 $_SESSION['user'] = ['email' => 'c@kvt.nl'];
 $_GET = [];
@@ -336,6 +337,36 @@ include dirname(__DIR__) . '/web/lijst.php';
 $htmlLijst = ob_get_clean();
 check(strpos($htmlLijst, 'disabled') !== false && strpos($htmlLijst, 'Een lijst met sleutels kan niet verwijderd worden. Verwijder eerst de sleutels.') !== false, 'verwijderknop is uitgeschakeld zolang er sleutels in de lijst staan');
 check(strpos($htmlLijst, 'data-share-open') !== false && strpos($htmlLijst, 'Toegang tot') !== false, 'lijstinstellingen bevatten een deel-modal');
+$backupEigen = htmlspecialchars(forculus_url('backup.php', $lijstenA[0]['token']), ENT_QUOTES, 'UTF-8');
+check(
+    strpos($htmlLijst, 'Backup en import') !== false
+    && strpos($htmlLijst, $backupEigen) !== false
+    && strpos($htmlLijst, 'action="import.php"') !== false
+    && strpos($htmlLijst, 'name="sqlite"') !== false,
+    'lijstinstellingen bevatten backup en import van deze lijst'
+);
+
+$_SESSION['user'] = ['email' => 'a@kvt.nl'];
+$_GET = ['lijst' => $hernoemd['token']];
+$_REQUEST = $_GET;
+$_POST = [];
+unset($_SESSION['forculus_lijst']);
+ob_start();
+include dirname(__DIR__) . '/web/lijst.php';
+$htmlLid = ob_get_clean();
+$backupGedeeld = htmlspecialchars(forculus_url('backup.php', $hernoemd['token']), ENT_QUOTES, 'UTF-8');
+check(
+    strpos($htmlLid, 'Backup en import') !== false && strpos($htmlLid, $backupGedeeld) !== false,
+    'een gedeelde gebruiker kan backup en import van deze lijst'
+);
+check(
+    strpos($htmlLid, 'Naam opslaan') === false && strpos($htmlLid, 'Lijst verwijderen') === false,
+    'een gedeelde gebruiker hernoemt of verwijdert de lijst niet'
+);
+check(
+    strpos($htmlLid, htmlspecialchars($lijstenA[0]['token'], ENT_QUOTES, 'UTF-8')) === false,
+    'instellingen van een gedeelde lijst raken een andere lijst niet'
+);
 
 foreach (glob($dir . '/*') ?: [] as $file) {
     if (is_file($file)) {
